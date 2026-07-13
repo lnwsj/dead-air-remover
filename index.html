@@ -1594,14 +1594,30 @@ function applyToAll() {
   $('exportProgressLabel').textContent = lang === 'th' ? 'ใช้ค่ากับทุกไฟล์…' : 'Applying to all…';
   $('exportPctVal').textContent = `0 / ${state.files.length}`;
   setTimeout(async () => {
-    // First decode any pending files (v1.3: parallel decode)
+    // First decode any pending files (v1.4.4: parallel decode for speed)
     const pending = state.files.filter(f => f.status === 'pending' || (f.status === 'decoded' && !f.audioBuffer));
-    for (let pi = 0; pi < pending.length; pi++) {
-      const f = pending[pi];
-      const idx = state.files.indexOf(f);
-      if (idx >= 0) {
-        $('exportPctVal').textContent = `${lang === 'th' ? 'Decoding' : 'Decoding'} ${pi+1}/${pending.length}…`;
-        await decodeFileInBackground(idx);
+    if (pending.length) {
+      $('exportPctVal').textContent = `${lang === 'th' ? 'Decoding' : 'Decoding'} 0/${pending.length}…`;
+      // Audio: parallel (no shared resource). Video: sequential (each needs own video element + audio stream).
+      const audioPending = pending.filter(f => f.kind === 'audio');
+      const videoPending = pending.filter(f => f.kind === 'video');
+      let decoded = 0;
+      const totalPending = pending.length;
+      const updateProg = () => { $('exportPctVal').textContent = `${lang === 'th' ? 'Decoding' : 'Decoding'} ${decoded}/${totalPending}…`; };
+      // Parallel audio decode
+      const audioPromises = audioPending.map(f => {
+        const idx = state.files.indexOf(f);
+        return decodeFileInBackground(idx).then(() => { decoded++; updateProg(); });
+      });
+      await Promise.all(audioPromises);
+      // Sequential video decode (each needs its own video element)
+      for (const f of videoPending) {
+        const idx = state.files.indexOf(f);
+        if (idx >= 0) {
+          await decodeFileInBackground(idx);
+          decoded++;
+          updateProg();
+        }
       }
     }
     let ok = 0, err = 0;
