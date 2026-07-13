@@ -1,0 +1,2871 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dead Air Remover · ตัดเดดแอร์ ลดเสียงเงียบ</title>
+<meta name="description" content="ตัดช่วงเสียงเงียบ (dead air) ออกจากไฟล์เสียง/วิดีโอ ทำงานในเบราว์เซอร์ 100% ไฟล์ไม่ถูกอัปโหลดไปไหน" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🔇%3C/text%3E%3C/svg%3E" />
+<style>
+:root{
+  --bg-0:#0a0e14;
+  --bg-1:#0f1419;
+  --bg-2:#161c24;
+  --bg-3:#1d242e;
+  --bg-4:#252d38;
+  --line:rgba(255,255,255,.08);
+  --line-2:rgba(255,255,255,.12);
+  --text:#e7ecf3;
+  --text-2:#a8b3c0;
+  --text-3:#6b7785;
+  --accent:#ff5a3c;
+  --accent-2:#ffa726;
+  --keep:#26d07c;
+  --keep-dim:rgba(38,208,124,.18);
+  --silence:rgba(255,90,60,.30);
+  --silence-2:rgba(255,90,60,.55);
+  --warn:#f5d90a;
+  --r:14px;
+  --r-sm:8px;
+  --shadow:0 8px 32px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.04) inset;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter","SF Pro Text",system-ui,sans-serif;
+  background:
+    radial-gradient(1200px 800px at 80% -10%,rgba(255,90,60,.10),transparent 60%),
+    radial-gradient(900px 700px at 0% 100%,rgba(38,208,124,.08),transparent 55%),
+    var(--bg-0);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select{font:inherit;color:inherit}
+.mono{font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace}
+
+/* ============== Top Bar ============== */
+.top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);
+  backdrop-filter:blur(20px);
+  position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:.2px}
+.brand-mark{
+  width:32px;height:32px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);
+  display:grid;place-items:center;font-size:18px;
+  box-shadow:0 4px 16px rgba(255,90,60,.35);
+}
+.brand-text small{display:block;font-size:10.5px;color:var(--text-3);font-weight:500;letter-spacing:.4px;text-transform:uppercase}
+.top-nav{display:flex;align-items:center;gap:8px}
+.lang-switch{
+  display:flex;background:var(--bg-2);border:1px solid var(--line);
+  border-radius:99px;padding:3px;font-size:11.5px;font-weight:600;
+}
+.lang-switch button{
+  padding:4px 11px;border-radius:99px;color:var(--text-2);
+  transition:all .15s;
+}
+.lang-switch button.active{background:var(--text);color:var(--bg-0)}
+
+/* ============== Layout ============== */
+.wrap{max-width:1340px;margin:0 auto;padding:24px 22px 80px}
+.hero{margin:8px 0 28px}
+.hero h1{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.15}
+.hero h1 .grad{background:linear-gradient(90deg,var(--accent) 0%,var(--accent-2) 60%,var(--keep) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--text-2);margin-top:6px;font-size:14px;max-width:680px}
+.hero .badges{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.badge{font-size:10.5px;padding:3px 8px;border-radius:99px;background:var(--bg-2);border:1px solid var(--line);color:var(--text-2);font-weight:600}
+.badge.green{background:rgba(38,208,124,.10);border-color:rgba(38,208,124,.30);color:#7ee2a9}
+.badge.amber{background:rgba(255,167,38,.10);border-color:rgba(255,167,38,.30);color:#ffc870}
+
+/* ============== Drop Zone ============== */
+.drop{
+  border:2px dashed var(--line-2);
+  border-radius:18px;
+  padding:60px 24px;
+  text-align:center;
+  background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);
+  transition:all .2s;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+}
+.drop:hover{border-color:var(--accent);background:rgba(255,90,60,.04)}
+.drop.drag{border-color:var(--accent);background:rgba(255,90,60,.08);transform:scale(1.005)}
+.drop-icon{font-size:56px;margin-bottom:14px;line-height:1}
+.drop h2{font-size:20px;font-weight:700;margin-bottom:6px}
+.drop p{color:var(--text-2);font-size:13.5px;max-width:520px;margin:0 auto 18px}
+.drop-types{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.drop-type{font-size:11px;padding:3px 9px;background:var(--bg-2);border:1px solid var(--line);border-radius:99px;color:var(--text-2);font-weight:600}
+.drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* ============== Editor ============== */
+.editor{display:none}
+.editor.show{display:block}
+
+/* File info bar */
+.filebar{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 18px;background:var(--bg-1);border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow);
+}
+.filebar .ico{
+  width:42px;height:42px;border-radius:10px;background:var(--bg-3);
+  display:grid;place-items:center;font-size:22px;flex-shrink:0;
+}
+.filebar .meta{flex:1;min-width:180px}
+.filebar .name{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:560px}
+.filebar .info{color:var(--text-3);font-size:11.5px;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.filebar .info span::before{content:"·";margin-right:10px;color:var(--text-3)}
+.filebar .info span:first-child::before{content:none}
+.filebar .actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;
+  background:var(--bg-2);border:1px solid var(--line);color:var(--text);
+  transition:all .15s;cursor:pointer;white-space:nowrap;
+}
+.btn:hover{background:var(--bg-3);border-color:var(--line-2);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border:none;color:#fff;box-shadow:0 4px 14px rgba(255,90,60,.35)}
+.btn.primary:hover{box-shadow:0 6px 20px rgba(255,90,60,.50);filter:brightness(1.08)}
+.btn.ghost{background:transparent}
+.btn.green{background:linear-gradient(135deg,#1da960,#26d07c);border:none;color:#00170b;box-shadow:0 4px 14px rgba(38,208,124,.35)}
+.btn.green:hover{filter:brightness(1.08);box-shadow:0 6px 20px rgba(38,208,124,.50)}
+.btn[disabled]{opacity:.4;cursor:not-allowed;transform:none!important}
+.btn .ico{font-size:14px}
+
+/* Grid */
+.grid{display:grid;grid-template-columns:1fr 320px;gap:18px;margin-top:18px}
+@media(max-width:980px){.grid{grid-template-columns:1fr}}
+
+/* Panels */
+.panel{
+  background:var(--bg-1);border:1px solid var(--line);
+  border-radius:var(--r);box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);
+}
+.panel-head h3{font-size:12.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-2)}
+.panel-head .hint{font-size:11px;color:var(--text-3)}
+.panel-body{padding:14px 16px}
+
+/* Waveform canvas */
+.wave-wrap{position:relative;background:#070a0e;border-radius:0;padding:0;overflow:hidden}
+.wave-canvas{display:block;width:100%;height:160px;cursor:pointer}
+
+/* Video stage */
+.video-wrap{position:relative;background:#000;overflow:hidden}
+.video-timeline{position:relative;background:#070a0e;height:48px;overflow:hidden}
+#videoTimelineCanvas{display:block;width:100%;height:48px}
+.video-time{position:absolute;left:0;right:0;bottom:0;height:18px;background:linear-gradient(0deg,rgba(0,0,0,.5),transparent);font-size:10px;color:var(--text-2);display:flex;align-items:center;justify-content:space-between;padding:0 10px;pointer-events:none;font-variant-numeric:tabular-nums}
+.player-mode-active{background:var(--text);color:var(--bg-0);padding:4px 11px;border-radius:99px;font-weight:600;font-size:11px;border:none;cursor:default}
+.player-mode-active[disabled]{opacity:1}
+.wave-time{position:absolute;left:0;right:0;bottom:0;height:18px;background:linear-gradient(0deg,rgba(0,0,0,.4),transparent);font-size:10px;color:var(--text-2);display:flex;align-items:center;justify-content:space-between;padding:0 10px;pointer-events:none}
+.wave-legend{position:absolute;top:8px;left:10px;display:flex;gap:10px;font-size:10.5px;color:var(--text-2);background:rgba(0,0,0,.5);padding:4px 10px;border-radius:99px;backdrop-filter:blur(10px);font-weight:600}
+.wave-legend .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.wave-legend .dot.k{background:var(--keep)}
+.wave-legend .dot.s{background:var(--silence-2)}
+
+/* Player */
+.player{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-2);border-top:1px solid var(--line)}
+.player-btn{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--text);color:var(--bg-0);
+  display:grid;place-items:center;font-size:14px;flex-shrink:0;
+  transition:all .15s;
+}
+.player-btn:hover{transform:scale(1.06)}
+.player-btn.playing{background:var(--keep);color:#00170b}
+.player-time{font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums;flex-shrink:0}
+.player-time .total{color:var(--text-3)}
+.player-seek{flex:1;height:6px;background:var(--bg-3);border-radius:99px;position:relative;cursor:pointer;overflow:hidden}
+.player-seek-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:99px;width:0;transition:width .05s linear}
+.player-mode{
+  display:flex;background:var(--bg-3);border-radius:99px;padding:3px;font-size:11px;font-weight:600;
+}
+.player-mode button{padding:4px 11px;border-radius:99px;color:var(--text-2);transition:all .15s}
+.player-mode button.active{background:var(--text);color:var(--bg-0)}
+
+/* Side controls */
+.controls{display:flex;flex-direction:column;gap:14px}
+.ctrl{padding:14px 16px;background:var(--bg-1);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.ctrl-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ctrl-head h4{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-2);display:flex;align-items:center;gap:6px}
+.ctrl-val{font-size:13px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.ctrl input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:5px;
+  background:var(--bg-3);border-radius:99px;outline:none;cursor:pointer;
+}
+.ctrl input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border:2px solid var(--bg-1);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.ctrl input[type=range]::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border:2px solid var(--bg-1);cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.ctrl-hint{font-size:10.5px;color:var(--text-3);margin-top:6px;line-height:1.45}
+.toggle{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:12.5px;color:var(--text-2)}
+.toggle input{accent-color:var(--accent);width:14px;height:14px}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.stat{
+  padding:10px 12px;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-sm);
+}
+.stat-label{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.stat-val{font-size:18px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+.stat-val.green{color:var(--keep)}
+.stat-val.amber{color:var(--accent-2)}
+.stat-val.red{color:var(--accent)}
+.stat-sub{font-size:10.5px;color:var(--text-3);margin-top:1px}
+
+/* Segments list */
+.seg-list{max-height:160px;overflow-y:auto;margin-top:8px;padding-right:4px}
+.seg-list::-webkit-scrollbar{width:6px}
+.seg-list::-webkit-scrollbar-thumb{background:var(--bg-4);border-radius:99px}
+.seg-item{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;background:var(--bg-2);border:1px solid var(--line);
+  border-radius:var(--r-sm);margin-bottom:5px;font-size:11.5px;
+  font-variant-numeric:tabular-nums;
+}
+.seg-item .tag{flex-shrink:0;font-size:9.5px;padding:1.5px 6px;border-radius:99px;font-weight:700;letter-spacing:.3px}
+.seg-item .tag.k{background:var(--keep-dim);color:var(--keep)}
+.seg-item .tag.s{background:var(--silence);color:#ffaa92}
+.seg-item .t{flex:1;color:var(--text-2);font-family:ui-monospace,monospace;font-size:10.5px}
+.seg-item .d{color:var(--text-3);font-size:10.5px;width:46px;text-align:right}
+
+/* Progress bar */
+.progress{
+  position:fixed;left:0;right:0;top:0;height:3px;z-index:200;
+  background:transparent;display:none;
+}
+.progress.show{display:block}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--keep));width:0%;transition:width .15s}
+
+/* Loading overlay */
+.loading{display:none;position:fixed;inset:0;background:rgba(10,14,20,.85);backdrop-filter:blur(8px);z-index:300;align-items:center;justify-content:center;flex-direction:column;gap:18px}
+.loading.show{display:flex}
+.spinner{
+  width:48px;height:48px;border-radius:50%;
+  border:3px solid var(--bg-3);border-top-color:var(--accent);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--text-2);font-size:13.5px;text-align:center;max-width:400px;line-height:1.5}
+.loading-sub{color:var(--text-3);font-size:11.5px;margin-top:2px}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--bg-3);border:1px solid var(--line-2);
+  padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:400;opacity:0;pointer-events:none;
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  display:flex;align-items:center;gap:8px;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.green{background:linear-gradient(135deg,#1da960,#26d07c);color:#00170b;border-color:transparent}
+.toast.red{background:linear-gradient(135deg,var(--accent),#c93820);color:#fff;border-color:transparent}
+
+/* Footer */
+.foot{text-align:center;margin-top:40px;color:var(--text-3);font-size:11.5px}
+.foot a{color:var(--text-2);border-bottom:1px dotted var(--text-3)}
+.foot a:hover{color:var(--accent);border-color:var(--accent)}
+
+/* Responsive */
+@media(max-width:680px){
+  .top{padding:10px 14px}
+  .wrap{padding:18px 12px 60px}
+  .hero h1{font-size:22px}
+  .drop{padding:40px 18px}
+  .filebar{padding:12px 14px}
+  .filebar .name{font-size:13px;max-width:200px}
+  .panel-body{padding:12px}
+  .stats{grid-template-columns:1fr 1fr}
+  .stat-val{font-size:15px}
+}
+
+/* ============== Feature: Preset buttons (Podcast/Video/Interview) ============== */
+.preset-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.preset-row .btn{padding:7px 10px;font-size:11.5px;flex:1;min-width:0;justify-content:center}
+.preset-saved-row{display:flex;gap:6px;margin-top:6px;align-items:center}
+.preset-saved-row input{flex:1;background:var(--bg-3);border:1px solid var(--line);color:var(--text);padding:6px 8px;border-radius:6px;font-size:11.5px;outline:none}
+.preset-saved-row .btn{padding:6px 10px;font-size:11px}
+
+/* ============== Feature: Click-to-toggle waveform (cursor hint) ============== */
+.wave-canvas{cursor:pointer}
+.wave-canvas:hover{filter:brightness(1.05)}
+.wave-click-hint{position:absolute;top:6px;right:8px;background:rgba(255,90,60,.15);border:1px solid var(--silence-2);color:#ffaa92;font-size:10px;padding:3px 8px;border-radius:99px;backdrop-filter:blur(10px);font-weight:600;pointer-events:none}
+
+/* ============== Feature: A/B auto-switch toggle ============== */
+.ab-toggle{display:flex;align-items:center;gap:8px;padding:10px 14px;background:linear-gradient(135deg,rgba(38,208,124,.08),rgba(255,90,60,.08));border:1px solid var(--line-2);border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--text-2);margin-top:6px}
+.ab-toggle input{accent-color:var(--keep);width:14px;height:14px;cursor:pointer}
+.ab-toggle .ico{font-size:14px;margin-right:2px}
+
+/* ============== Feature: Batch queue panel ============== */
+.batch-queue{margin-top:8px;padding:6px;background:var(--bg-2);border-radius:var(--r-sm);border:1px solid var(--line);max-height:140px;overflow-y:auto}
+.batch-queue:empty::before{content:'วางหลายไฟล์ที่ drop zone เพื่อเพิ่ม queue';display:block;padding:14px 8px;font-size:11px;color:var(--text-3);text-align:center;font-style:italic}
+.batch-item{display:flex;align-items:center;gap:6px;padding:6px 8px;font-size:11.5px;border-radius:6px;margin-bottom:3px;background:var(--bg-3)}
+.batch-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.batch-item .status{font-size:10px;padding:2px 7px;border-radius:99px;background:var(--bg-2);color:var(--text-2);font-weight:700;letter-spacing:.3px}
+.batch-item .status.done{background:var(--keep-dim);color:var(--keep)}
+.batch-item .status.err{background:var(--silence);color:#ffaa92}
+.batch-item .status.processing{background:rgba(255,167,38,.18);color:#ffc870}
+
+/* ============== Feature: Export progress bar ============== */
+.export-progress-wrap{margin-top:8px;padding:10px 12px;background:var(--bg-1);border:1px solid var(--line);border-radius:var(--r-sm)}
+.export-progress-bar-bg{height:5px;background:var(--bg-3);border-radius:99px;overflow:hidden;margin-top:6px}
+.export-progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2),var(--keep));width:0%;transition:width .15s linear}
+.export-progress-pct{font-size:11px;color:var(--text-2);text-align:right;margin-top:2px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ============== Feature: Adaptive threshold button highlight ============== */
+.btn.adaptive-on{background:linear-gradient(135deg,#1da960,#26d07c);color:#00170b;border:none;box-shadow:0 4px 14px rgba(38,208,124,.35)}
+
+/* ============== Feature: Silent click target overlay (used for click-to-toggle) ============== */
+.seg-click-target{cursor:pointer}
+
+/* ============== v1.3: File tabs (multi-file switcher) ============== */
+.file-tabs{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px 12px;margin-top:10px;
+  background:var(--bg-1);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);
+}
+.file-tabs-list{
+  display:flex;gap:6px;flex:1;overflow-x:auto;overflow-y:hidden;
+  scrollbar-width:thin;min-height:34px;
+}
+.file-tab{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 10px;border-radius:var(--r-sm);
+  background:var(--bg-2);border:1px solid var(--line);
+  font-size:11.5px;color:var(--text-2);
+  cursor:pointer;flex-shrink:0;max-width:200px;
+  transition:all .15s;
+  white-space:nowrap;overflow:hidden;
+}
+.file-tab:hover{background:var(--bg-3);border-color:var(--line-2);color:var(--text)}
+.file-tab.active{
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border-color:transparent;color:#fff;font-weight:600;
+  box-shadow:0 2px 8px rgba(255,90,60,.35);
+}
+.file-tab .ftab-name{overflow:hidden;text-overflow:ellipsis;max-width:130px}
+.file-tab .ftab-close{
+  width:16px;height:16px;border-radius:50%;
+  background:rgba(0,0,0,.2);color:#fff;display:grid;place-items:center;
+  font-size:10px;font-weight:700;flex-shrink:0;cursor:pointer;
+  transition:all .15s;
+}
+.file-tab .ftab-close:hover{background:#c93820}
+.file-tabs-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* ============== v1.3: Export dropdown menu ============== */
+.export-menu{
+  position:absolute;top:calc(100% + 6px);right:0;z-index:200;
+  background:var(--bg-1);border:1px solid var(--line-2);
+  border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.5);
+  min-width:200px;overflow:hidden;
+}
+.export-menu-item{
+  padding:10px 14px;font-size:12.5px;color:var(--text);
+  cursor:pointer;border-bottom:1px solid var(--line);
+  transition:background .12s;display:flex;align-items:center;gap:6px;
+}
+.export-menu-item:last-child{border-bottom:none}
+.export-menu-item:hover{background:var(--bg-3);color:var(--accent)}
+.export-menu-item .em-ico{font-size:14px;flex-shrink:0}
+
+/* ============== Settings modal ============== */
+.modal{display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.modal-backdrop{position:absolute;inset:0;background:rgba(10,14,20,.75);backdrop-filter:blur(8px)}
+.modal-card{position:relative;background:var(--bg-1);border:1px solid var(--line-2);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.6);width:min(420px,90vw);max-height:90vh;overflow-y:auto}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+.modal-head h3{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.modal-body{padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:var(--bg-2);border:1px solid var(--line);border-radius:10px}
+.setting-row label{flex:1;font-size:12.5px;color:var(--text-2);font-weight:500;line-height:1.4}
+.setting-info{margin-top:4px;padding:8px 12px;background:var(--bg-3);border-radius:8px;font-size:11px;color:var(--text-3);font-family:ui-monospace,monospace;line-height:1.5}
+.lang-switch.inline{background:var(--bg-3);padding:2px}
+.lang-switch.inline button{padding:5px 14px;font-size:11.5px}
+
+/* ============== Delete preset button ============== */
+.preset-row-with-delete{display:flex;align-items:center;gap:6px;margin-top:6px}
+.preset-row-with-delete select{flex:1;background:var(--bg-3);border:1px solid var(--line);color:var(--text);padding:6px 8px;border-radius:6px;font-size:11.5px;outline:none;cursor:pointer}
+.preset-delete-btn{background:var(--silence);border:1px solid var(--silence-2);color:#ffaa92;width:30px;height:30px;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;flex-shrink:0;display:grid;place-items:center;transition:all .15s}
+.preset-delete-btn:hover{background:#c93820;color:#fff;border-color:#c93820}
+.preset-delete-btn:disabled{opacity:.3;cursor:not-allowed}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
+
+<header class="top">
+  <div class="brand">
+    <div class="brand-mark">🔇</div>
+    <div class="brand-text">
+      <div>Dead Air Remover</div>
+      <small>ตัดเดดแอร์ · ลดเสียงเงียบ</small>
+    </div>
+  </div>
+  <div class="top-nav">
+    <button class="btn ghost" id="settingsBtn" title="Settings · ตั้งค่า" style="padding:6px 10px;font-size:14px;line-height:1">⚙️</button>
+    <div class="lang-switch" id="langSwitch">
+      <button data-lang="th" class="active">TH</button>
+      <button data-lang="en">EN</button>
+    </div>
+  </div>
+</header>
+
+<!-- Settings modal -->
+<div class="modal" id="settingsModal">
+  <div class="modal-backdrop" id="settingsBackdrop"></div>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>⚙️ <span data-i18n="settingsTitle">Settings · ตั้งค่า</span></h3>
+      <button class="btn ghost" id="settingsClose" style="padding:4px 10px">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="setting-row">
+        <label data-i18n="setLang">Language · ภาษา</label>
+        <div class="lang-switch inline" id="settingsLang">
+          <button data-lang="th" class="active">TH</button>
+          <button data-lang="en">EN</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label for="settingsFade" data-i18n="setFade">Crossfade at cuts · crossfade ตรงรอยต่อ</label>
+        <input type="checkbox" id="settingsFade" checked style="accent-color:var(--accent);width:18px;height:18px" />
+      </div>
+      <div class="setting-row">
+        <label for="settingsFadeMs" data-i18n="setFadeMs">Crossfade duration · ms</label>
+        <input type="number" id="settingsFadeMs" min="0" max="100" step="5" value="10" style="width:80px;background:var(--bg-3);border:1px solid var(--line);color:var(--text);padding:5px 8px;border-radius:6px;font-size:13px" />
+      </div>
+      <div class="setting-row">
+        <label for="settingsAutoAdapt" data-i18n="setAutoAdapt">Auto-adapt on load · ปรับ threshold อัตโนมัติเมื่อโหลดไฟล์</label>
+        <input type="checkbox" id="settingsAutoAdapt" style="accent-color:var(--accent);width:18px;height:18px" />
+      </div>
+      <div class="setting-row">
+        <label data-i18n="setStorage">Local storage · พื้นที่เก็บข้อมูล</label>
+        <button class="btn" id="settingsClear" style="padding:6px 10px;font-size:11.5px">🗑 Clear all data</button>
+      </div>
+      <div class="setting-info" id="settingsInfo">—</div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="hero">
+    <h1><span class="grad" data-i18n="heroTitle">ตัดช่วงเสียงเงียบออกจากเสียง/วิดีโอ</span> · <span data-i18n="heroSubtitle">ใน 3 วินาที</span></h1>
+    <p data-i18n="heroDesc">อัปโหลดไฟล์เสียงหรือวิดีโอ → ปรับ 3 ค่า (threshold / min duration / padding) → export เป็น WAV ทันที ทำงานในเบราว์เซอร์ 100% ไฟล์ไม่ถูกส่งไปไหน</p>
+    <div class="badges">
+      <span class="badge green">🔒 100% Local — ไฟล์ไม่ถูกอัปโหลด</span>
+      <span class="badge amber">⚡ Real-time preview</span>
+      <span class="badge">🎙️ Podcast / Voice</span>
+      <span class="badge">🎬 Video Cut + Export</span>
+      <span class="badge">📦 WAV / WebM</span>
+    </div>
+  </section>
+
+  <!-- Drop Zone -->
+  <div class="drop" id="drop">
+    <input type="file" id="fileInput" accept="audio/*,video/*,.mp3,.wav,.m4a,.ogg,.flac,.aac,.opus,.mp4,.mov,.webm,.mkv" multiple />
+    <div class="drop-icon">🎙️</div>
+    <h2 data-i18n="dropTitle">ลากไฟล์มาวาง หรือคลิกเพื่อเลือก</h2>
+    <p data-i18n="dropDesc">รองรับ MP3, WAV, M4A, OGG, FLAC, AAC · MP4, MOV, WebM, MKV (วิดีโอจะ extract เสียงออกมา)</p>
+    <div class="drop-types">
+      <span class="drop-type">MP3</span>
+      <span class="drop-type">WAV</span>
+      <span class="drop-type">M4A</span>
+      <span class="drop-type">OGG</span>
+      <span class="drop-type">FLAC</span>
+      <span class="drop-type">MP4</span>
+      <span class="drop-type">WEBM</span>
+      <span class="drop-type">MOV</span>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <section class="editor" id="editor">
+    <div class="filebar">
+      <div class="ico" id="fileIco">🎵</div>
+      <div class="meta">
+        <div class="name" id="fileName">—</div>
+        <div class="info" id="fileInfo"></div>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="resetBtn" data-i18n="btnReset">↺ เปลี่ยนไฟล์</button>
+        <button class="btn" id="reanalyzeBtn" data-i18n="btnReanalyze">🔄 วิเคราะห์ใหม่</button>
+        <div style="position:relative;display:inline-block">
+          <button class="btn green" id="exportBtn" data-i18n="btnExport">⬇ Export ▾</button>
+          <div id="exportMenu" class="export-menu" style="display:none">
+            <div class="export-menu-item" id="exportCurrent" data-action="current">📄 เฉพาะไฟล์นี้</div>
+            <div class="export-menu-item" id="exportAll" data-action="all">📦 ทั้งหมด (<span id="exportAllCount">0</span>)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File tabs (v1.3: multi-file switcher) -->
+    <div class="file-tabs" id="fileTabs" style="display:none">
+      <div class="file-tabs-list" id="fileTabsList"></div>
+      <div class="file-tabs-actions">
+        <button class="btn ghost" id="applyToAllBtn" title="นำค่าปัจจุบันไปใช้กับทุกไฟล์" style="padding:6px 10px;font-size:11.5px">📋 ใช้ค่านี้กับทั้งหมด</button>
+        <button class="btn ghost" id="closeAllBtn" title="ปิดไฟล์ทั้งหมด" style="padding:6px 10px;font-size:11.5px">✕</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: Waveforms + Video -->
+      <div>
+        <!-- Video Stage (shown only for video files) -->
+        <div class="panel" id="videoStage" style="margin-bottom:14px;display:none">
+          <div class="panel-head">
+            <h3>🎬 <span data-i18n="videoTitle">Video Preview (วิดีโอต้นฉบับ)</span></h3>
+            <div class="hint" id="videoStat">—</div>
+          </div>
+          <div class="video-wrap">
+            <video id="origVideo" controls playsinline muted style="display:block;width:100%;max-height:380px;background:#000;border-radius:0"></video>
+            <div class="video-timeline">
+              <canvas id="videoTimelineCanvas" height="48"></canvas>
+              <div class="video-time" id="videoTime">0:00 / 0:00</div>
+            </div>
+          </div>
+          <div class="player" id="videoPlayer">
+            <button class="player-btn" id="videoPlayCuts" title="เล่นแบบข้ามเดดแอร์">✂️</button>
+            <div class="player-time" id="videoPlayerTime">0:00<span class="total"> / 0:00</span></div>
+            <div class="player-seek" id="videoSeek"><div class="player-seek-fill" id="videoSeekFill"></div></div>
+            <div class="player-mode">
+              <button class="player-mode-active" disabled>Video Mode</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-head">
+            <h3 id="origTitle" data-i18n="origTitle">🎚️ Original (ต้นฉบับ)</h3>
+            <div class="hint" id="origStat">—</div>
+          </div>
+          <div class="wave-wrap">
+            <canvas class="wave-canvas" id="origCanvas" height="160"></canvas>
+            <div class="wave-legend">
+              <span><span class="dot k"></span><span data-i18n="legendKeep">เสียงพูด</span></span>
+              <span><span class="dot s"></span><span data-i18n="legendSilence">เดดแอร์ (จะถูกตัด)</span></span>
+            </div>
+            <div class="wave-time" id="origTime">0:00 / 0:00</div>
+          </div>
+          <div class="player">
+            <button class="player-btn" id="origPlay" data-ico="▶">▶</button>
+            <div class="player-time" id="origPlayerTime">0:00<span class="total"> / 0:00</span></div>
+            <div class="player-seek" id="origSeek"><div class="player-seek-fill" id="origSeekFill"></div></div>
+            <div class="player-mode" id="origMode" data-target="orig">
+              <button data-speed="0.75">0.75×</button>
+              <button data-speed="1" class="active">1×</button>
+              <button data-speed="1.5">1.5×</button>
+              <button data-speed="2">2×</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h3 id="procTitle" data-i18n="procTitle">✂️ Processed (หลังตัด)</h3>
+            <div class="hint" id="procStat">—</div>
+          </div>
+          <div class="wave-wrap">
+            <canvas class="wave-canvas" id="procCanvas" height="160"></canvas>
+            <div class="wave-time" id="procTime">0:00 / 0:00</div>
+          </div>
+          <div class="player">
+            <button class="player-btn" id="procPlay" data-ico="▶">▶</button>
+            <div class="player-time" id="procPlayerTime">0:00<span class="total"> / 0:00</span></div>
+            <div class="player-seek" id="procSeek"><div class="player-seek-fill" id="procSeekFill"></div></div>
+            <div class="player-mode" id="procMode" data-target="proc">
+              <button data-speed="0.75">0.75×</button>
+              <button data-speed="1" class="active">1×</button>
+              <button data-speed="1.5">1.5×</button>
+              <button data-speed="2">2×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Controls -->
+      <aside class="controls">
+        <div class="ctrl">
+          <div class="ctrl-head">
+            <h4>🔉 <span data-i18n="ctrlThreshold">Threshold</span></h4>
+            <div class="ctrl-val" id="thresholdVal">-40 dB</div>
+          </div>
+          <input type="range" id="threshold" min="-70" max="-15" step="1" value="-40" />
+          <div class="ctrl-hint" data-i18n="hintThreshold">ค่า dB ที่ถือว่า "เงียบ" — ต่ำ = ตัดเฉพาะความเงียบจริงๆ, สูง = ตัดเสียงเบาๆ ด้วย</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-head">
+            <h4>⏱️ <span data-i18n="ctrlMinDur">Min Silence</span></h4>
+            <div class="ctrl-val" id="minDurVal">300 ms</div>
+          </div>
+          <input type="range" id="minDur" min="50" max="3000" step="50" value="300" />
+          <div class="ctrl-hint" data-i18n="hintMinDur">ช่วงเงียบที่สั้นกว่านี้จะไม่ถูกตัด (กันตัดระหว่างหยุดหายใจ)</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-head">
+            <h4>↔️ <span data-i18n="ctrlPad">Padding</span></h4>
+            <div class="ctrl-val" id="padVal">80 ms</div>
+          </div>
+          <input type="range" id="pad" min="0" max="500" step="10" value="80" />
+          <div class="ctrl-hint" data-i18n="hintPad">เว้นขอบไว้ทั้งสองข้างของช่วงเสียง (กันตัดเสียงต้น/ท้ายประโยค)</div>
+        </div>
+
+        <label class="toggle">
+          <input type="checkbox" id="fadeChk" checked />
+          <span data-i18n="optFade">Crossfade 10ms ตรงรอยต่อ</span>
+        </label>
+
+        <div class="ctrl">
+          <div class="ctrl-head">
+            <h4>📊 <span data-i18n="ctrlResult">ผลลัพธ์</span></h4>
+          </div>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-label" data-i18n="statOriginal">ต้นฉบับ</div>
+              <div class="stat-val amber" id="statOrig">0:00</div>
+              <div class="stat-sub" id="statOrigSize">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label" data-i18n="statNew">หลังตัด</div>
+              <div class="stat-val green" id="statNew">0:00</div>
+              <div class="stat-sub" id="statNewSize">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label" data-i18n="statRemoved">ตัดออก</div>
+              <div class="stat-val red" id="statRemoved">0:00</div>
+              <div class="stat-sub" id="statRemovedCount">0 ช่วง</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label" data-i18n="statSaved">ประหยัด</div>
+              <div class="stat-val green" id="statSaved">0%</div>
+              <div class="stat-sub" data-i18n="statSavedSub">ของเวลาทั้งหมด</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ctrl">
+          <div class="ctrl-head">
+            <h4>📋 <span data-i18n="ctrlSegments">Segments</span></h4>
+            <div class="ctrl-val" id="segCount">0</div>
+          </div>
+          <div class="seg-list" id="segList"></div>
+        </div>
+
+        <!-- FEATURE 7: Preset buttons (Podcast/Video/Interview/Adaptive/Save) -->
+        <div class="ctrl">
+          <div class="ctrl-head">
+            <h4>⚡ <span data-i18n="ctrlPresets">Presets</span></h4>
+            <div class="ctrl-val" id="presetInfo">3 + saved</div>
+          </div>
+          <div class="preset-row">
+            <button class="btn" id="presetPodcast" title="Podcast: -45dB / 200ms / 50ms">🎙️ Podcast</button>
+            <button class="btn" id="presetVideo" title="Video: -35dB / 500ms / 100ms">🎬 Video</button>
+            <button class="btn" id="presetInterview" title="Interview: -50dB / 100ms / 30ms">🎤 Interview</button>
+          </div>
+          <div class="preset-row" style="margin-top:6px">
+            <button class="btn" id="presetAdaptive" title="คำนวณ noise floor อัตโนมัติ">🧠 Adaptive</button>
+            <button class="btn" id="presetSave" title="บันทึก preset ปัจจุบัน">💾 Save</button>
+          </div>
+          <div class="preset-saved-row" id="presetSavedRow" style="display:none">
+            <input type="text" id="presetName" placeholder="ชื่อ preset..." />
+            <button class="btn primary" id="presetSaveConfirm">บันทึก</button>
+          </div>
+          <div class="preset-row-with-delete">
+            <select id="presetList" style="display:none;background:var(--bg-3);color:var(--text);border:1px solid var(--line);padding:6px;border-radius:6px;font-size:11.5px">
+              <option value="">-- เลือก preset ที่บันทึกไว้ --</option>
+            </select>
+            <button class="preset-delete-btn" id="presetDelete" title="ลบ preset ที่เลือก" disabled>×</button>
+          </div>
+          <div class="ctrl-hint">3 preset ตาม use case · Adaptive คำนวณ noise floor อัตโนมัติ · Save เก็บใน localStorage</div>
+        </div>
+
+        <!-- FEATURE 6: A/B auto-switch -->
+        <label class="toggle ab-toggle" title="เล่นสลับ original ↔ processed อัตโนมัติ">
+          <input type="checkbox" id="abToggle" />
+          <span class="ico">🔄</span>
+          <span data-i18n="abLabel">A/B เล่นสลับอัตโนมัติ (5s ↔ 5s)</span>
+        </label>
+
+        <!-- FEATURE 9: Batch processing (hidden by default, shown when files queued) -->
+        <div class="ctrl" id="batchCtrl" style="display:none">
+          <div class="ctrl-head">
+            <h4>📦 <span>Batch Queue</span></h4>
+            <div class="ctrl-val" id="batchCount">0</div>
+          </div>
+          <div class="batch-queue" id="batchQueue"></div>
+          <button class="btn primary" id="batchProcess" style="width:100%;margin-top:8px">▶ Process all &amp; download ZIP</button>
+        </div>
+
+        <!-- FEATURE 5: Click waveform hint -->
+        <div class="ctrl-hint" style="margin-top:6px;padding:8px 10px;background:rgba(255,90,60,.08);border:1px solid rgba(255,90,60,.18);border-radius:var(--r-sm);color:#ffaa92">
+          💡 <strong>คลิกที่ waveform</strong> เพื่อสลับ keep ↔ cut แบบ manual
+        </div>
+
+        <!-- FEATURE 1+2: Export progress (hidden by default) -->
+        <div class="export-progress-wrap" id="exportProgressWrap" style="display:none">
+          <div class="ctrl-head" style="padding:0;margin-bottom:0">
+            <h4 style="font-size:12px">📤 <span id="exportProgressLabel">กำลัง Export…</span></h4>
+          </div>
+          <div class="export-progress-bar-bg">
+            <div class="export-progress-bar-fill" id="exportProgressBar"></div>
+          </div>
+          <div class="export-progress-pct" id="exportPctVal">0%</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <p class="foot">
+    Built with Web Audio API + Canvas 2D · <a href="https://codehub.sj88ai.com/skill/" target="_blank" rel="noopener">CodeHub Skills v3.7</a> · v1.0
+  </p>
+</main>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div>
+    <div class="loading-text" id="loadingText" data-i18n="loadText">กำลังประมวลผล…</div>
+    <div class="loading-sub" id="loadingSub"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   Dead Air Remover — single-file Web Audio app
+   - Decode any audio/video via AudioContext (audio direct) or ffmpeg.wasm (video)
+   - Scan RMS amplitude in 10ms windows, mark silence below threshold
+   - Concatenate non-silent segments with optional crossfade
+   - Export processed buffer as 16-bit PCM WAV
+   ========================================================================= */
+
+const I18N = {
+  th: {
+    heroTitle: 'ตัดช่วงเสียงเงียบออกจากเสียง/วิดีโอ',
+    heroSubtitle: 'ใน 3 วินาที',
+    heroDesc: 'อัปโหลดไฟล์เสียงหรือวิดีโอ → ปรับ 3 ค่า (threshold / min duration / padding) → export เป็น WAV หรือ WebM ทันที ทำงานในเบราว์เซอร์ 100% ไฟล์ไม่ถูกส่งไปไหน',
+    dropTitle: 'ลากไฟล์มาวาง หรือคลิกเพื่อเลือก',
+    dropDesc: 'รองรับ MP3, WAV, M4A, OGG, FLAC, AAC · MP4, MOV, WebM, MKV',
+    btnReset: '↺ เปลี่ยนไฟล์',
+    btnReanalyze: '🔄 วิเคราะห์ใหม่',
+    btnExport: '⬇ Export',
+    btnExportWav: '⬇ Export WAV (เสียง)',
+    btnExportVideo: '⬇ Export WebM (วิดีโอ)',
+    videoTitle: 'Video Preview (วิดีโอต้นฉบับ)',
+    playWithCuts: '✂️ เล่นแบบข้ามเดดแอร์',
+    playOriginal: '▶ เล่นต้นฉบับ',
+    origTitle: '🎚️ Original (ต้นฉบับ)',
+    procTitle: '✂️ Processed (หลังตัด)',
+    legendKeep: 'เสียงพูด',
+    legendSilence: 'เดดแอร์ (จะถูกตัด)',
+    ctrlThreshold: 'Threshold',
+    ctrlMinDur: 'Min Silence',
+    ctrlPad: 'Padding',
+    ctrlResult: 'ผลลัพธ์',
+    ctrlSegments: 'Segments',
+    statOriginal: 'ต้นฉบับ',
+    statNew: 'หลังตัด',
+    statRemoved: 'ตัดออก',
+    statSaved: 'ประหยัด',
+    statSavedSub: 'ของเวลาทั้งหมด',
+    hintThreshold: 'ค่า dB ที่ถือว่า "เงียบ" — ต่ำ = ตัดเฉพาะความเงียบจริงๆ, สูง = ตัดเสียงเบาๆ ด้วย',
+    hintMinDur: 'ช่วงเงียบที่สั้นกว่านี้จะไม่ถูกตัด (กันตัดระหว่างหยุดหายใจ)',
+    hintPad: 'เว้นขอบไว้ทั้งสองข้างของช่วงเสียง (กันตัดเสียงต้น/ท้ายประโยค)',
+    optFade: 'Crossfade 10ms ตรงรอยต่อ',
+    loadText: 'กำลังประมวลผล…',
+  },
+  en: {
+    heroTitle: 'Cut dead air from audio/video',
+    heroSubtitle: 'in 3 seconds',
+    heroDesc: 'Upload audio or video → adjust 3 knobs (threshold / min duration / padding) → export as WAV or WebM. Runs 100% in your browser, files never leave your device.',
+    dropTitle: 'Drop file here or click to browse',
+    dropDesc: 'Supports MP3, WAV, M4A, OGG, FLAC, AAC · MP4, MOV, WebM, MKV',
+    btnReset: '↺ Change file',
+    btnReanalyze: '🔄 Reanalyze',
+    btnExport: '⬇ Export',
+    btnExportWav: '⬇ Export WAV (audio)',
+    btnExportVideo: '⬇ Export WebM (video)',
+    videoTitle: 'Video Preview (original)',
+    playWithCuts: '✂️ Play with cuts (skip silences)',
+    playOriginal: '▶ Play original',
+    origTitle: '🎚️ Original',
+    procTitle: '✂️ Processed',
+    legendKeep: 'Speech',
+    legendSilence: 'Dead air (will be cut)',
+    ctrlThreshold: 'Threshold',
+    ctrlMinDur: 'Min Silence',
+    ctrlPad: 'Padding',
+    ctrlResult: 'Result',
+    ctrlSegments: 'Segments',
+    statOriginal: 'Original',
+    statNew: 'Processed',
+    statRemoved: 'Removed',
+    statSaved: 'Saved',
+    statSavedSub: 'of total time',
+    hintThreshold: 'dB level considered "silent" — low = only true silence, high = also trims quiet parts',
+    hintMinDur: 'Silent regions shorter than this are not cut (preserves natural pauses)',
+    hintPad: 'Keep this much audio on each side of speech regions (prevents word clipping)',
+    optFade: 'Crossfade 10ms at joins',
+    loadText: 'Processing…',
+  }
+};
+let lang = 'th';
+const $ = id => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
+const fmtTime = sec => {
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+};
+const fmtBytes = b => {
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1024*1024*1024) return (b/1024/1024).toFixed(1) + ' MB';
+  return (b/1024/1024/1024).toFixed(2) + ' GB';
+};
+
+/* ==================== i18n ==================== */
+function applyLang() {
+  $$('[data-i18n]').forEach(el => {
+    const k = el.dataset.i18n;
+    if (I18N[lang][k]) el.textContent = I18N[lang][k];
+  });
+  $$('#langSwitch button').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+  // Refresh export button label if file is loaded
+  if (state.file && state.fileKind) {
+    $('exportBtn').textContent = state.fileKind === 'video' ? I18N[lang].btnExportVideo : I18N[lang].btnExportWav;
+  }
+}
+
+/* ==================== Toast ==================== */
+let toastT;
+function toast(msg, kind = '') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + kind;
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+/* ==================== Loading ==================== */
+function loading(show, text, sub) {
+  $('loading').classList.toggle('show', show);
+  if (text) $('loadingText').textContent = text;
+  if (sub !== undefined) $('loadingSub').textContent = sub;
+}
+
+/* ==================== App State ==================== */
+const state = {
+  file: null,
+  fileName: '',
+  fileSize: 0,
+  fileKind: 'audio',          // 'audio' | 'video'
+  audioBuffer: null,          // decoded AudioBuffer
+  sampleRate: 44100,
+  numChannels: 0,
+  duration: 0,
+  segments: [],               // [{start, end, kind:'keep'|'silence'}]
+  processedBuffer: null,      // AudioBuffer
+  proc: { threshold: -40, minDur: 300, pad: 80, fade: true },
+  ffmpeg: null,               // lazy-loaded ffmpeg.wasm
+  origPlayer: null,
+  procPlayer: null,
+  files: [],                  // v1.3: multi-file tabs [{id, file, name, kind, size, audioBuffer, segments, processedBuffer, status, error}]
+  activeFileIndex: -1,        // v1.3: which file is currently shown in editor (-1 = none)
+  isPlaying: { orig: false, proc: false },
+  currentTime: { orig: 0, proc: 0 },
+  abort: false,
+  // Video state
+  vid: {
+    el: null,            // HTMLVideoElement (off-DOM, used for capture)
+    url: null,           // ObjectURL
+    width: 0,
+    height: 0,
+    isVideo: false,
+    playingCuts: false,  // true when playing with cuts
+    recorder: null,      // MediaRecorder for export
+    recStream: null,     // MediaStream from captureStream()
+    recChunks: [],       // recorded chunks
+  },
+};
+
+/* ==================== File handling ==================== */
+const VIDEO_EXTS = ['mp4','mov','webm','mkv','m4v','avi'];
+const AUDIO_EXTS = ['mp3','wav','m4a','ogg','flac','aac','opus','oga'];
+
+function detectKind(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (VIDEO_EXTS.includes(ext)) return 'video';
+  if (AUDIO_EXTS.includes(ext)) return 'audio';
+  return 'audio';
+}
+
+function handleFile(file) {
+  if (!file) return;
+  state.file = file;
+  state.fileName = file.name;
+  state.fileSize = file.size;
+  state.fileKind = detectKind(file.name);
+  startProcessing();
+}
+
+function startProcessing() {
+  loading(true, I18N[lang].loadText, state.fileName);
+  $('progress').classList.add('show');
+  $('progressBar').style.width = '0%';
+
+  // Use setTimeout so the spinner renders
+  setTimeout(async () => {
+    try {
+      let audioData;
+      if (state.fileKind === 'video') {
+        // Video: use HTMLVideoElement to read audio track, then capture via WebAudio
+        audioData = await extractAudioFromVideo(state.file);
+      } else {
+        const ab = await state.file.arrayBuffer();
+        $('progressBar').style.width = '30%';
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        state.audioBuffer = await ctx.decodeAudioData(ab.slice(0));
+        ctx.close();
+        $('progressBar').style.width = '60%';
+      }
+      if (state.abort) return;
+      onAudioDecoded();
+    } catch (e) {
+      console.error(e);
+      loading(false);
+      $('progress').classList.remove('show');
+      toast('❌ ' + (e.message || 'decode failed'), 'red');
+    }
+  }, 50);
+}
+
+/* Extract audio from video by playing through WebAudio + OfflineAudioContext capture */
+async function extractAudioFromVideo(file) {
+  $('loadingSub').textContent = 'Loading video…';
+  const url = URL.createObjectURL(file);
+  const video = document.createElement('video');
+  video.src = url;
+  video.crossOrigin = 'anonymous';
+  video.muted = true;        // muted to allow autoplay for capture
+  video.preload = 'auto';
+
+  await new Promise((res, rej) => {
+    video.onloadedmetadata = res;
+    video.onerror = () => rej(new Error('Video load failed'));
+    setTimeout(() => rej(new Error('Video load timeout')), 30000);
+  });
+
+  $('progressBar').style.width = '20%';
+  $('loadingSub').textContent = `Decoding ${video.videoWidth}×${video.videoHeight} · ${video.duration.toFixed(1)}s`;
+
+  // Store video reference for UI display + later export
+  state.vid.el = video;
+  state.vid.url = url;
+  state.vid.width = video.videoWidth;
+  state.vid.height = video.videoHeight;
+  state.vid.isVideo = true;
+
+  // Strategy: use captureStream() + MediaStreamAudioSourceNode + AudioContext
+  // This works in modern Chrome/Firefox
+  if (typeof video.captureStream !== 'function' && typeof video.mozCaptureStream !== 'function') {
+    URL.revokeObjectURL(url);
+    throw new Error('Browser does not support video audio capture');
+  }
+  const captureFn = video.captureStream || video.mozCaptureStream;
+  const stream = captureFn.call(video);
+  const audioTracks = stream.getAudioTracks();
+  if (!audioTracks.length) {
+    URL.revokeObjectURL(url);
+    throw new Error('No audio track in video');
+  }
+
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = ctx.createMediaStreamSource(stream);
+  const dest = ctx.createMediaStreamDestination();
+  src.connect(dest);
+
+  // Tap into destination
+  const recorder = new MediaRecorder(dest.stream);
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+  const recordingDone = new Promise(res => recorder.onstop = res);
+
+  video.currentTime = 0;
+  await video.play();
+  recorder.start(100);
+  $('loadingSub').textContent = 'Capturing audio track…';
+  $('progressBar').style.width = '40%';
+
+  await new Promise(res => {
+    video.onended = res;
+  });
+
+  recorder.stop();
+  await recordingDone;
+  video.pause();
+  $('progressBar').style.width = '70%';
+
+  // Decode the captured blob
+  const blob = new Blob(chunks, { type: 'audio/webm' });
+  const ab = await blob.arrayBuffer();
+  state.audioBuffer = await ctx.decodeAudioData(ab);
+  ctx.close();
+}
+
+/* ==================== After decode ==================== */
+function onAudioDecoded() {
+  const buf = state.audioBuffer;
+  state.sampleRate = buf.sampleRate;
+  state.numChannels = buf.numberOfChannels;
+  state.duration = buf.duration;
+
+  $('fileName').textContent = state.fileName;
+  $('fileIco').textContent = state.fileKind === 'video' ? '🎬' : '🎵';
+  const isStereo = buf.numberOfChannels === 2;
+  $('fileInfo').innerHTML = `
+    <span>${buf.numberOfChannels === 1 ? 'Mono' : isStereo ? 'Stereo' : buf.numberOfChannels + 'ch'}</span>
+    <span>${buf.sampleRate.toLocaleString()} Hz</span>
+    <span>${fmtTime(buf.duration)}</span>
+    <span>${fmtBytes(state.fileSize)}</span>
+    <span>${state.fileKind === 'video' ? (state.vid.isVideo ? `🎬 Video ${state.vid.width}×${state.vid.height}` : '🎬 Video') : '🎵 Audio'}</span>
+  `;
+
+  // For video files, show the video element with the original source
+  if (state.vid.isVideo && state.vid.url) {
+    const v = $('origVideo');
+    v.src = state.vid.url;
+    v.muted = true;
+    v.currentTime = 0;
+    v.volume = 0;          // mute video player (we use audio buffer for waveform)
+    $('videoStage').style.display = '';
+    $('videoStat').textContent = `${state.vid.width}×${state.vid.height} · ${fmtTime(state.duration)}`;
+    $('videoTime').textContent = `0:00 / ${fmtTime(state.duration)}`;
+  } else {
+    $('videoStage').style.display = 'none';
+  }
+
+  // Update export button label based on file kind
+  if (state.fileKind === 'video') {
+    $('exportBtn').textContent = I18N[lang].btnExportVideo;
+  } else {
+    $('exportBtn').textContent = I18N[lang].btnExportWav;
+  }
+
+  analyzeSilence();
+  renderEditor();
+  loading(false);
+  $('progress').classList.remove('show');
+  $('progressBar').style.width = '100%';
+  setTimeout(() => { $('progressBar').style.width = '0%'; }, 400);
+
+  $('drop').style.display = 'none';
+  $('editor').classList.add('show');
+  requestAnimationFrame(() => requestAnimationFrame(() => renderEditor()));
+  toast('✅ ' + (lang === 'th' ? 'โหลดเสร็จ · พร้อมตัด' : 'Loaded · ready to trim'), 'green');
+}
+
+/* ==================== Silence detection ==================== */
+function analyzeSilence() {
+  const { audioBuffer, proc } = state;
+  const sr = audioBuffer.sampleRate;
+  const winSec = 0.01; // 10ms window
+  const winSize = Math.max(1, Math.round(sr * winSec));
+  const total = audioBuffer.length;
+  const numWin = Math.ceil(total / winSize);
+
+  // Mix to mono for analysis
+  const ch0 = audioBuffer.getChannelData(0);
+  const ch1 = audioBuffer.numberOfChannels > 1 ? audioBuffer.getChannelData(1) : null;
+
+  // Compute RMS in dB per window
+  const dbArr = new Float32Array(numWin);
+  for (let w = 0; w < numWin; w++) {
+    const start = w * winSize;
+    const end = Math.min(start + winSize, total);
+    let sum = 0;
+    for (let i = start; i < end; i++) {
+      const a = ch0[i] + (ch1 ? ch1[i] : 0);
+      const s = a * 0.5;
+      sum += s * s;
+    }
+    const rms = Math.sqrt(sum / (end - start));
+    dbArr[w] = rms > 0 ? 20 * Math.log10(rms) : -100;
+  }
+
+  // Mark windows as silent if below threshold
+  const thr = proc.threshold;
+  const isSilence = new Uint8Array(numWin);
+  for (let w = 0; w < numWin; w++) isSilence[w] = dbArr[w] < thr ? 1 : 0;
+
+  // Group into segments
+  const segs = [];
+  let i = 0;
+  while (i < numWin) {
+    const kind = isSilence[i] ? 'silence' : 'keep';
+    let j = i + 1;
+    while (j < numWin && isSilence[j] === (kind === 'silence' ? 1 : 0)) j++;
+    const startSec = i * winSec;
+    const endSec = j * winSec;
+    segs.push({ start: startSec, end: endSec, kind });
+    i = j;
+  }
+
+  // Merge short silences back into keep (if duration < minDur)
+  const minDurSec = proc.minDur / 1000;
+  for (let k = 1; k < segs.length - 1; k++) {
+    if (segs[k].kind === 'silence' && (segs[k].end - segs[k].start) < minDurSec) {
+      segs[k].kind = 'keep';
+    }
+  }
+  // Re-merge consecutive same-kind
+  const merged = [];
+  for (const s of segs) {
+    if (merged.length && merged[merged.length-1].kind === s.kind) {
+      merged[merged.length-1].end = s.end;
+    } else {
+      merged.push({ ...s });
+    }
+  }
+
+  // Drop leading/trailing silence
+  if (merged.length && merged[0].kind === 'silence') merged.shift();
+  if (merged.length && merged[merged.length-1].kind === 'silence') merged.pop();
+
+  state.segments = merged;
+  buildProcessedBuffer();
+}
+
+/* ==================== Build processed audio ==================== */
+function buildProcessedBuffer() {
+  const orig = state.audioBuffer;
+  const sr = orig.sampleRate;
+  const ch = orig.numberOfChannels;
+  const padSec = state.proc.pad / 1000;
+  const fadeMs = state.proc.fade ? 10 : 0;
+  const fadeSec = fadeMs / 1000;
+
+  // Compute keep regions (segments already have padding concept — add pad here)
+  // Apply padding: extend each keep into adjacent silence
+  const keepRegions = [];
+  for (let i = 0; i < state.segments.length; i++) {
+    const s = state.segments[i];
+    if (s.kind !== 'keep') continue;
+    let start = Math.max(0, s.start - padSec);
+    let end = Math.min(state.duration, s.end + padSec);
+    // Clamp to previous silence end and next silence start
+    if (i > 0 && state.segments[i-1].kind === 'silence') {
+      start = Math.max(start, state.segments[i-1].start);
+    }
+    if (i < state.segments.length - 1 && state.segments[i+1].kind === 'silence') {
+      end = Math.min(end, state.segments[i+1].end);
+    }
+    keepRegions.push({ start, end });
+  }
+
+  // Merge overlapping keep regions (can happen with padding)
+  const merged = [];
+  for (const r of keepRegions) {
+    if (merged.length && merged[merged.length-1].end >= r.start) {
+      merged[merged.length-1].end = Math.max(merged[merged.length-1].end, r.end);
+    } else {
+      merged.push({ ...r });
+    }
+  }
+
+  // Total samples needed
+  let totalSamples = 0;
+  for (const r of merged) totalSamples += Math.round((r.end - r.start) * sr);
+  if (totalSamples === 0) totalSamples = 1;
+
+  // Build output buffer
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const out = ctx.createBuffer(ch, totalSamples, sr);
+
+  for (let c = 0; c < ch; c++) {
+    const inCh = orig.getChannelData(c);
+    const outCh = out.getChannelData(c);
+    let writeIdx = 0;
+    for (const r of merged) {
+      const startSamp = Math.round(r.start * sr);
+      const lenSamp = Math.round((r.end - r.start) * sr);
+      // Apply crossfade at region boundary if fade enabled
+      const fadeSamp = Math.min(Math.round(fadeSec * sr), Math.floor(lenSamp / 2));
+      for (let i = 0; i < lenSamp; i++) {
+        let sample = inCh[startSamp + i];
+        if (fadeSamp > 0) {
+          if (i < fadeSamp) {
+            // Fade in
+            sample *= i / fadeSamp;
+          } else if (i >= lenSamp - fadeSamp) {
+            // Fade out
+            sample *= (lenSamp - i) / fadeSamp;
+          }
+        }
+        outCh[writeIdx++] = sample;
+      }
+    }
+  }
+  ctx.close();
+  state.processedBuffer = out;
+}
+
+/* ==================== Waveform rendering ==================== */
+function computePeaks(buffer, width, height) {
+  // Returns Float32Array of normalized peak values [-1, 1] for each pixel column
+  const ch = buffer.getChannelData(0);
+  const ch2 = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : null;
+  const len = ch.length;
+  const samplesPerPx = Math.max(1, Math.floor(len / width));
+  const peaks = new Float32Array(width);
+  for (let x = 0; x < width; x++) {
+    const start = x * samplesPerPx;
+    const end = Math.min(start + samplesPerPx, len);
+    let max = 0;
+    for (let i = start; i < end; i++) {
+      const v = Math.abs((ch[i] + (ch2 ? ch2[i] : 0)) * 0.5);
+      if (v > max) max = v;
+    }
+    peaks[x] = max;
+  }
+  return peaks;
+}
+
+function drawWaveform(canvas, buffer, segments, kind /* 'orig' | 'proc' */) {
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth;
+  const cssH = canvas.clientHeight;
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  // Center line
+  ctx.strokeStyle = 'rgba(255,255,255,.05)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, cssH / 2);
+  ctx.lineTo(cssW, cssH / 2);
+  ctx.stroke();
+
+  if (!buffer) return;
+
+  const peaks = computePeaks(buffer, cssW, cssH);
+  const mid = cssH / 2;
+  const amp = cssH / 2 - 6;
+
+  // Draw silence overlays first (for orig only)
+  if (segments && kind === 'orig') {
+    const total = state.duration;
+    ctx.fillStyle = 'rgba(255,90,60,0.22)';
+    for (const s of segments) {
+      if (s.kind !== 'silence') continue;
+      const x1 = (s.start / total) * cssW;
+      const x2 = (s.end / total) * cssW;
+      ctx.fillRect(x1, 0, Math.max(1, x2 - x1), cssH);
+    }
+  }
+
+  // Waveform bars
+  for (let x = 0; x < cssW; x++) {
+    const p = peaks[x];
+    const h = Math.max(1, p * amp);
+    // Color based on keep/silence
+    let color = '#7ee2a9'; // keep (green)
+    if (kind === 'orig' && segments) {
+      const total = state.duration;
+      const t = (x / cssW) * total;
+      const seg = findSegAt(segments, t);
+      if (seg && seg.kind === 'silence') color = '#ff8a72';
+    } else if (kind === 'proc') {
+      color = '#7ee2a9';
+    }
+    ctx.fillStyle = color;
+    ctx.fillRect(x, mid - h / 2, 1, h);
+  }
+}
+
+function findSegAt(segments, t) {
+  for (const s of segments) {
+    if (t >= s.start && t < s.end) return s;
+  }
+  return null;
+}
+
+function renderWaveforms() {
+  drawWaveform($('origCanvas'), state.audioBuffer, state.segments, 'orig');
+  drawWaveform($('procCanvas'), state.processedBuffer, null, 'proc');
+}
+
+/* ==================== Stats UI ==================== */
+function renderStats() {
+  const dur = state.duration;
+  const procDur = state.processedBuffer ? state.processedBuffer.duration : 0;
+  const removed = dur - procDur;
+  const silCount = state.segments.filter(s => s.kind === 'silence').length;
+  const pct = dur > 0 ? (removed / dur) * 100 : 0;
+
+  $('origStat').textContent = `${fmtTime(dur)} · ${state.numChannels}ch · ${state.sampleRate}Hz`;
+  $('procStat').textContent = `${fmtTime(procDur)} · saved ${pct.toFixed(1)}%`;
+  $('origTime').textContent = `${fmtTime(0)} / ${fmtTime(dur)}`;
+  $('procTime').textContent = `${fmtTime(0)} / ${fmtTime(procDur)}`;
+  $('origPlayerTime').innerHTML = `0:00<span class="total"> / ${fmtTime(dur)}</span>`;
+  $('procPlayerTime').innerHTML = `0:00<span class="total"> / ${fmtTime(procDur)}</span>`;
+
+  $('statOrig').textContent = fmtTime(dur);
+  $('statOrigSize').textContent = fmtBytes(state.fileSize);
+  $('statNew').textContent = fmtTime(procDur);
+  // Estimate WAV size: sampleRate * ch * 2 (16-bit) * dur + 44 header
+  const wavSize = Math.round(state.sampleRate * state.numChannels * 2 * procDur) + 44;
+  $('statNewSize').textContent = '~' + fmtBytes(wavSize);
+  $('statRemoved').textContent = fmtTime(removed);
+  $('statRemovedCount').textContent = silCount + (lang === 'th' ? ' ช่วง' : ' regions');
+  $('statSaved').textContent = pct.toFixed(1) + '%';
+
+  $('segCount').textContent = state.segments.length;
+  renderSegList();
+}
+
+function renderSegList() {
+  const list = $('segList');
+  list.innerHTML = '';
+  // Show first 30 segments
+  const show = state.segments.slice(0, 30);
+  for (const s of show) {
+    const div = document.createElement('div');
+    div.className = 'seg-item';
+    div.innerHTML = `
+      <span class="tag ${s.kind === 'silence' ? 's' : 'k'}">${s.kind === 'silence' ? (lang === 'th' ? 'ตัด' : 'cut') : (lang === 'th' ? 'เก็บ' : 'keep')}</span>
+      <span class="t">${fmtTime(s.start)} → ${fmtTime(s.end)}</span>
+      <span class="d">${(s.end - s.start).toFixed(2)}s</span>
+    `;
+    list.appendChild(div);
+  }
+  if (state.segments.length > 30) {
+    const more = document.createElement('div');
+    more.style.cssText = 'font-size:11px;color:var(--text-3);padding:4px;text-align:center';
+    more.textContent = `+${state.segments.length - 30} ${lang === 'th' ? 'ช่วงเพิ่มเติม' : 'more regions'}`;
+    list.appendChild(more);
+  }
+}
+
+/* ==================== v1.3: Multi-file switcher ==================== */
+function renderFileTabs() {
+  const wrap = $('fileTabs');
+  const list = $('fileTabsList');
+  if (!state.files.length) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'flex';
+  list.innerHTML = '';
+  state.files.forEach((f, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'file-tab' + (i === state.activeFileIndex ? ' active' : '');
+    const kindIco = f.kind === 'video' ? '🎬' : '🎵';
+    const trunc = f.name.length > 18 ? f.name.slice(0, 16) + '…' : f.name;
+    const closeHtml = i === state.activeFileIndex ? '<span class="ftab-close" data-close="' + i + '">×</span>' : '';
+    tab.innerHTML = '<span>' + kindIco + '</span><span class="ftab-name" title="' + escapeHtml(f.name) + '">' + escapeHtml(trunc) + '</span>' + closeHtml;
+    tab.addEventListener('click', (e) => {
+      if (e.target.dataset.close) {
+        closeFile(parseInt(e.target.dataset.close));
+        return;
+      }
+      switchToFile(i);
+    });
+    list.appendChild(tab);
+  });
+  $('exportAllCount').textContent = state.files.length;
+}
+
+function switchToFile(idx) {
+  if (idx < 0 || idx >= state.files.length) return;
+  // Save current editor state to active file
+  saveCurrentToFile();
+  // Load target file's state into editor
+  state.activeFileIndex = idx;
+  loadFileToEditor(state.files[idx]);
+  renderFileTabs();
+}
+
+function saveCurrentToFile() {
+  if (state.activeFileIndex < 0 || state.activeFileIndex >= state.files.length) return;
+  const f = state.files[state.activeFileIndex];
+  f.audioBuffer = state.audioBuffer;
+  f.segments = state.segments;
+  f.processedBuffer = state.processedBuffer;
+  f.duration = state.duration;
+  f.sampleRate = state.sampleRate;
+  f.numChannels = state.numChannels;
+  f.fileKind = state.fileKind;
+  f.size = state.fileSize;
+  f.name = state.fileName;
+}
+
+function loadFileToEditor(f) {
+  state.audioBuffer = f.audioBuffer;
+  state.segments = f.segments || [];
+  state.processedBuffer = f.processedBuffer || null;
+  state.duration = f.duration || (f.audioBuffer ? f.audioBuffer.duration : 0);
+  state.sampleRate = f.sampleRate || 44100;
+  state.numChannels = f.numChannels || 0;
+  state.fileKind = f.kind;
+  state.fileSize = f.size;
+  state.fileName = f.name;
+  state.file = f.file;
+  // Update UI
+  $('fileName').textContent = f.name;
+  $('fileIco').textContent = f.kind === 'video' ? '🎬' : '🎵';
+  // Update export button label
+  if (f.kind === 'video') {
+    $('exportBtn').textContent = I18N[lang].btnExportVideo;
+  } else {
+    $('exportBtn').textContent = I18N[lang].btnExportWav;
+  }
+  if (typeof renderEditor === 'function') {
+    renderEditor();
+  }
+}
+
+function closeFile(idx) {
+  if (idx < 0 || idx >= state.files.length) return;
+  state.files.splice(idx, 1);
+  if (!state.files.length) {
+    // No files left — reset to drop zone
+    state.activeFileIndex = -1;
+    state.audioBuffer = null;
+    state.segments = [];
+    state.processedBuffer = null;
+    state.duration = 0;
+    state.fileName = '';
+    state.fileKind = 'audio';
+    state.file = null;
+    stopAll();
+    $('editor').classList.remove('show');
+    $('drop').style.display = '';
+    $('fileInput').value = '';
+    renderFileTabs();
+    toast('🗑 ' + (lang === 'th' ? 'ปิดไฟล์ทั้งหมด' : 'All files closed'), '');
+    return;
+  }
+  // Switch to adjacent file
+  const newIdx = Math.min(idx, state.files.length - 1);
+  saveCurrentToFile();
+  state.activeFileIndex = newIdx;
+  loadFileToEditor(state.files[newIdx]);
+  renderFileTabs();
+  toast('🗑 ' + (lang === 'th' ? 'ปิดไฟล์' : 'File closed'), '');
+}
+
+function applyToAll() {
+  if (state.files.length < 2) {
+    toast('⚠️ ' + (lang === 'th' ? 'ต้องมี ≥ 2 ไฟล์' : 'Need ≥ 2 files'), 'amber');
+    return;
+  }
+  // Save current to active file first
+  saveCurrentToFile();
+  loading(true, I18N[lang].loadText, lang === 'th' ? 'ใช้ค่ากับทุกไฟล์...' : 'Applying to all...');
+  setTimeout(async () => {
+    // First decode any pending files (v1.3: parallel decode)
+    const pending = state.files.filter(f => f.status === 'pending' || (f.status === 'decoded' && !f.audioBuffer));
+    for (const f of pending) {
+      const idx = state.files.indexOf(f);
+      if (idx >= 0) await decodeFileInBackground(idx);
+    }
+    let ok = 0, err = 0;
+    // Use current settings (from sliders)
+    const settings = { ...state.proc };
+    state.files.forEach((f, i) => {
+      try {
+        if (!f.audioBuffer) { err++; return; }
+        // Swap in temporarily to use analyzeSilence / buildProcessedBuffer
+        const savedAB = state.audioBuffer;
+        const savedSegs = state.segments;
+        const savedProc = state.processedBuffer;
+        const savedFile = state.file;
+        const savedFileName = state.fileName;
+        const savedFileKind = state.fileKind;
+        const savedFileSize = state.fileSize;
+        const savedDur = state.duration;
+        const savedSR = state.sampleRate;
+        const savedNC = state.numChannels;
+        state.audioBuffer = f.audioBuffer;
+        state.segments = [];
+        state.processedBuffer = null;
+        state.file = f.file;
+        state.fileName = f.name;
+        state.fileKind = f.kind;
+        state.fileSize = f.size;
+        state.duration = f.duration;
+        state.sampleRate = f.sampleRate;
+        state.numChannels = f.numChannels;
+        analyzeSilence();
+        buildProcessedBuffer();
+        // Save back to file entry
+        f.segments = state.segments;
+        f.processedBuffer = state.processedBuffer;
+        ok++;
+        // Restore current editor state
+        state.audioBuffer = savedAB;
+        state.segments = savedSegs;
+        state.processedBuffer = savedProc;
+        state.file = savedFile;
+        state.fileName = savedFileName;
+        state.fileKind = savedFileKind;
+        state.fileSize = savedFileSize;
+        state.duration = savedDur;
+        state.sampleRate = savedSR;
+        state.numChannels = savedNC;
+      } catch (e) {
+        console.error('applyToAll error on', f.name, e);
+        err++;
+      }
+    });
+    renderFileTabs();
+    renderEditor();
+    loading(false);
+    toast('✅ ' + (lang === 'th' ? 'ใช้ค่ากับ' : 'Applied to') + ' ' + ok + '/' + state.files.length + ' ' + (lang === 'th' ? 'ไฟล์' : 'files') + (err ? ` (${err} error)` : ''), err ? 'amber' : 'green');
+  }, 30);
+}
+
+async function exportAll() {
+  if (!state.files.length) return;
+  // Save current
+  saveCurrentToFile();
+  loading(true, I18N[lang].loadText, lang === 'th' ? 'Export ทั้งหมด...' : 'Exporting all...');
+  setExporting(true, 0);
+  let ok = 0, err = 0;
+  const total = state.files.length;
+  for (let i = 0; i < total; i++) {
+    const f = state.files[i];
+    try {
+      if (!f.processedBuffer) { err++; continue; }
+      const base = f.name.replace(/\.[^.]+$/, '');
+      const blob = encodeWAV(f.processedBuffer);
+      const sizeKB = (blob.size / 1024).toFixed(1);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = base + '_no-dead-air.wav';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      ok++;
+      $('exportPctVal').textContent = (lang === 'th' ? `ส่งออก ${i+1}/${total} · ${sizeKB}KB` : `Exported ${i+1}/${total} · ${sizeKB}KB`);
+    } catch (e) {
+      console.error('exportAll error on', f.name, e);
+      err++;
+    }
+    setExporting(true, Math.round(((i + 1) / total) * 100));
+    await new Promise(r => setTimeout(r, 80));
+  }
+  setExporting(false, 0);
+  loading(false);
+  toast('✅ ' + (lang === 'th' ? 'Export' : 'Exported') + ' ' + ok + '/' + total + (err ? ` (${err} error)` : ''), err ? 'amber' : 'green');
+}
+
+/* ==================== Editor ==================== */
+function renderEditor() {
+  renderWaveforms();
+  renderVideoTimeline();
+  renderStats();
+}
+
+/* Render video timeline (silence overlay) */
+function renderVideoTimeline() {
+  if (!state.vid.isVideo) return;
+  const canvas = $('videoTimelineCanvas');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 800;
+  const cssH = 48;
+  canvas.width = cssW * dpr;
+  canvas.height = cssH * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, cssW, cssH);
+  // Dark background
+  ctx.fillStyle = '#0a0e14';
+  ctx.fillRect(0, 0, cssW, cssH);
+  // Draw silence overlays
+  if (state.segments && state.segments.length) {
+    ctx.fillStyle = 'rgba(255,90,60,0.35)';
+    for (const s of state.segments) {
+      if (s.kind !== 'silence') continue;
+      const x1 = (s.start / state.duration) * cssW;
+      const x2 = (s.end / state.duration) * cssW;
+      ctx.fillRect(x1, 0, Math.max(1, x2 - x1), cssH);
+    }
+  }
+  // Center line
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, cssH/2);
+  ctx.lineTo(cssW, cssH/2);
+  ctx.stroke();
+}
+
+/* ==================== WAV encoder ==================== */
+function encodeWAV(buffer) {
+  const numCh = buffer.numberOfChannels;
+  const sr = buffer.sampleRate;
+  const len = buffer.length;
+  const bytesPerSample = 2;
+  const dataSize = len * numCh * bytesPerSample;
+  const headerSize = 44;
+  const total = headerSize + dataSize;
+  const ab = new ArrayBuffer(total);
+  const view = new DataView(ab);
+
+  // RIFF header
+  writeStr(view, 0, 'RIFF');
+  view.setUint32(4, total - 8, true);
+  writeStr(view, 8, 'WAVE');
+  // fmt chunk
+  writeStr(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, numCh, true);
+  view.setUint32(24, sr, true);
+  view.setUint32(28, sr * numCh * bytesPerSample, true);
+  view.setUint16(32, numCh * bytesPerSample, true);
+  view.setUint16(34, 16, true);
+  // data chunk
+  writeStr(view, 36, 'data');
+  view.setUint32(40, dataSize, true);
+
+  // PCM samples
+  const ch = [];
+  for (let c = 0; c < numCh; c++) ch.push(buffer.getChannelData(c));
+  let offset = 44;
+  for (let i = 0; i < len; i++) {
+    for (let c = 0; c < numCh; c++) {
+      let s = Math.max(-1, Math.min(1, ch[c][i]));
+      s = s < 0 ? s * 0x8000 : s * 0x7fff;
+      view.setInt16(offset, s, true);
+      offset += 2;
+    }
+  }
+  return new Blob([ab], { type: 'audio/wav' });
+}
+function writeStr(view, offset, str) {
+  for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+}
+
+/* ==================== Players (Web Audio scheduling) ==================== */
+let activePlayer = null;     // 'orig' | 'proc'
+let playState = { source: null, ctx: null, gain: null, startedAt: 0, startOffset: 0, mode: 'orig' };
+
+function stopAll() {
+  if (playState.source) {
+    try { playState.source.stop(); } catch(e){}
+    playState.source.disconnect();
+    playState.source = null;
+  }
+  if (playState.gain) {
+    playState.gain.disconnect();
+    playState.gain = null;
+  }
+  state.isPlaying.orig = false;
+  state.isPlaying.proc = false;
+  $('origPlay').textContent = '▶';
+  $('origPlay').classList.remove('playing');
+  $('procPlay').textContent = '▶';
+  $('procPlay').classList.remove('playing');
+}
+
+function playSegment(mode) {
+  // mode = 'orig' | 'proc'
+  if (activePlayer === mode && state.isPlaying[mode]) {
+    // pause
+    const elapsed = playState.ctx.currentTime - playState.startedAt;
+    state.currentTime[mode] = Math.min(state.currentTime[mode] + elapsed, mode === 'orig' ? state.duration : state.processedBuffer.duration);
+    stopAll();
+    return;
+  }
+  // If playing other, stop it
+  if (activePlayer) stopAll();
+  activePlayer = mode;
+  const buf = mode === 'orig' ? state.audioBuffer : state.processedBuffer;
+  if (!buf) return;
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const gain = ctx.createGain();
+  const speed = parseFloat($(mode + 'Mode').querySelector('.active').dataset.speed) || 1;
+  src.playbackRate.value = speed;
+  src.connect(gain);
+  gain.connect(ctx.destination);
+  const startOffset = state.currentTime[mode] || 0;
+  src.start(0, Math.min(startOffset, buf.duration));
+  playState = { source: src, ctx, gain, startedAt: ctx.currentTime, startOffset, mode };
+
+  state.isPlaying[mode] = true;
+  $(mode + 'Play').textContent = '⏸';
+  $(mode + 'Play').classList.add('playing');
+
+  src.onended = () => {
+    if (activePlayer === mode) {
+      state.currentTime[mode] = 0;
+      state.isPlaying[mode] = false;
+      $(mode + 'Play').textContent = '▶';
+      $(mode + 'Play').classList.remove('playing');
+      updatePlayProgress();
+    }
+  };
+
+  // tick
+  function tick() {
+    if (!state.isPlaying[mode]) return;
+    const elapsed = (ctx.currentTime - playState.startedAt) * speed;
+    const t = startOffset + elapsed;
+    state.currentTime[mode] = t;
+    updatePlayProgress();
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function updatePlayProgress() {
+  for (const m of ['orig', 'proc']) {
+    const dur = m === 'orig' ? state.duration : (state.processedBuffer ? state.processedBuffer.duration : 0);
+    const t = Math.min(state.currentTime[m], dur);
+    const pct = dur > 0 ? (t / dur) * 100 : 0;
+    $(m + 'SeekFill').style.width = pct + '%';
+    $(m + 'PlayerTime').innerHTML = `${fmtTime(t)}<span class="total"> / ${fmtTime(dur)}</span>`;
+    $(m + 'Time').textContent = `${fmtTime(t)} / ${fmtTime(dur)}`;
+  }
+}
+
+function seekTo(mode, ratio) {
+  const dur = mode === 'orig' ? state.duration : (state.processedBuffer ? state.processedBuffer.duration : 0);
+  state.currentTime[mode] = ratio * dur;
+  if (state.isPlaying[mode]) {
+    // restart at offset
+    const wasPlaying = state.isPlaying[mode];
+    stopAll();
+    if (wasPlaying) playSegment(mode);
+  } else {
+    updatePlayProgress();
+  }
+}
+
+/* ==================== Wire up events ==================== */
+function wireEvents() {
+  // Lang switch
+  $$('#langSwitch button').forEach(b => b.addEventListener('click', () => {
+    lang = b.dataset.lang;
+    saveSettings(Object.assign(loadSettings(), { lang }));
+    syncLangSwitches(lang);
+    applyLang();
+    renderSegList();
+    renderStats();
+  }));
+
+  // Drop zone
+  const dz = $('drop');
+  const fi = $('fileInput');
+  fi.addEventListener('change', e => handleFile(e.target.files));  // v1.3: pass full FileList
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
+  dz.addEventListener('drop', e => { e.preventDefault(); handleFile(e.dataTransfer.files); });  // v1.3: pass full FileList
+
+  // Reset
+  $('resetBtn').addEventListener('click', () => {
+    stopAll();
+    state.audioBuffer = null;
+    state.processedBuffer = null;
+    state.segments = [];
+    state.files = [];
+    state.activeFileIndex = -1;
+    renderFileTabs();
+    $('editor').classList.remove('show');
+    $('drop').style.display = '';
+    fi.value = '';
+  });
+
+  // v1.3: Apply current settings to all files
+  $('applyToAllBtn').addEventListener('click', applyToAll);
+  $('closeAllBtn').addEventListener('click', () => closeFile(state.activeFileIndex >= 0 ? state.activeFileIndex : 0));
+
+  // v1.3: Export dropdown menu
+  $('exportBtn').addEventListener('click', (e) => {
+    if (!state.processedBuffer) {
+      // No file: do normal export
+      if (state.fileKind === 'video' && state.vid.isVideo) exportVideoWithCuts();
+      else exportWav();
+      return;
+    }
+    e.stopPropagation();
+    const menu = $('exportMenu');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  });
+  $('exportCurrent').addEventListener('click', () => {
+    $('exportMenu').style.display = 'none';
+    if (state.fileKind === 'video' && state.vid.isVideo) exportVideoWithCuts();
+    else exportWav();
+  });
+  $('exportAll').addEventListener('click', () => {
+    $('exportMenu').style.display = 'none';
+    if (state.files.length < 2) {
+      toast('⚠️ ' + (lang === 'th' ? 'มีแค่ไฟล์เดียว' : 'Only 1 file'), 'amber');
+      return;
+    }
+    exportAll();
+  });
+  // Click anywhere to close export menu
+  document.addEventListener('click', (e) => {
+    const menu = $('exportMenu');
+    if (menu.style.display === 'block' && !e.target.closest('#exportBtn') && !e.target.closest('#exportMenu')) {
+      menu.style.display = 'none';
+    }
+  });
+
+  // Reanalyze
+  $('reanalyzeBtn').addEventListener('click', () => {
+    if (!state.audioBuffer) return;
+    loading(true, I18N[lang].loadText, lang === 'th' ? 'กำลังวิเคราะห์…' : 'Analyzing…');
+    setTimeout(() => {
+      analyzeSilence();
+      requestAnimationFrame(() => renderEditor());
+      loading(false);
+      toast('✅ ' + (lang === 'th' ? 'วิเคราะห์ใหม่แล้ว' : 'Reanalyzed'), 'green');
+    }, 30);
+  });
+
+  // Controls
+  const thr = $('threshold'), minDur = $('minDur'), pad = $('pad');
+  const fade = $('fadeChk');
+  const update = debounce(() => {
+    state.proc.threshold = parseFloat(thr.value);
+    state.proc.minDur = parseFloat(minDur.value);
+    state.proc.pad = parseFloat(pad.value);
+    state.proc.fade = fade.checked;
+    $('thresholdVal').textContent = thr.value + ' dB';
+    $('minDurVal').textContent = minDur.value + ' ms';
+    $('padVal').textContent = pad.value + ' ms';
+    // Sync fade to settings panel
+    const settingsFade = $('settingsFade');
+    if (settingsFade && settingsFade.checked !== fade.checked) {
+      settingsFade.checked = fade.checked;
+    }
+    saveSettings(Object.assign(loadSettings(), { fade: fade.checked }));
+    if (state.audioBuffer) {
+      analyzeSilence();
+      renderEditor();
+    }
+  }, 80);
+  thr.addEventListener('input', update);
+  minDur.addEventListener('input', update);
+  pad.addEventListener('input', update);
+  fade.addEventListener('change', update);
+
+  // Players
+  $('origPlay').addEventListener('click', () => playSegment('orig'));
+  $('procPlay').addEventListener('click', () => playSegment('proc'));
+  $('origSeek').addEventListener('click', e => {
+    const r = e.currentTarget.getBoundingClientRect();
+    seekTo('orig', (e.clientX - r.left) / r.width);
+  });
+  $('procSeek').addEventListener('click', e => {
+    const r = e.currentTarget.getBoundingClientRect();
+    seekTo('proc', (e.clientX - r.left) / r.width);
+  });
+  $$('.player-mode').forEach(m => m.addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON') return;
+    const t = e.target.dataset.target;
+    const speed = parseFloat(e.target.dataset.speed);
+    e.currentTarget.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    if (state.isPlaying[t]) {
+      // restart with new speed
+      const wasPlaying = state.isPlaying[t];
+      stopAll();
+      if (wasPlaying) playSegment(t);
+    }
+  }));
+
+  // Export
+  // Old inline exportBtn handler removed (replaced by v1.3 dropdown above)
+
+  function exportWav() {
+    setExporting(true, 0);
+    $('exportPctVal').textContent = (lang === 'th' ? 'เขียนไฟล์…' : 'Encoding…');
+    // Defer to next frame so progress UI updates
+    requestAnimationFrame(() => {
+      try {
+        const t0 = performance.now();
+        const blob = encodeWAV(state.processedBuffer);
+        const t1 = performance.now();
+        // Show 50% at encode done, then 100% after download
+        tickExportProgress(50, 100);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const base = state.fileName.replace(/\.[^.]+$/, '');
+        a.href = url;
+        a.download = `${base}_no-dead-air.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        // Show real export stats
+        const sizeKB = (blob.size / 1024).toFixed(1);
+        const dur = state.processedBuffer ? state.processedBuffer.duration.toFixed(1) : '?';
+        $('exportPctVal').textContent = (lang === 'th' ? `ดาวน์โหลด ${sizeKB}KB · ${dur}s` : `Downloaded ${sizeKB}KB · ${dur}s`);
+        setTimeout(() => {
+          $('exportProgressBar').style.width = '100%';
+          $('exportPctVal').textContent = '100%';
+        }, 100);
+        setTimeout(() => setExporting(false, 0), 1200);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        toast(`✅ ${lang === 'th' ? 'ดาวน์โหลด' : 'Downloaded'} ${sizeKB}KB · ${(t1-t0).toFixed(0)}ms`, 'green');
+      } catch (e) {
+        console.error(e);
+        setExporting(false, 0);
+        toast('❌ ' + (e.message || 'export failed'), 'red');
+      }
+    });
+  }
+
+  // Video player events for video stage
+  $('origVideo').addEventListener('timeupdate', () => {
+    if (!state.vid.el || state.vid.playingCuts) return;
+    const v = $('origVideo');
+    $('videoTime').textContent = `${fmtTime(v.currentTime)} / ${fmtTime(v.duration || 0)}`;
+    const pct = v.duration ? (v.currentTime / v.duration) * 100 : 0;
+    $('videoSeekFill').style.width = pct + '%';
+  });
+  $('origVideo').addEventListener('ended', () => {
+    state.vid.playingCuts = false;
+    $('videoPlayCuts').textContent = '✂️';
+    $('videoPlayCuts').classList.remove('playing');
+  });
+  $('videoPlayCuts').addEventListener('click', async () => {
+    if (!state.vid.el) return;
+    if (state.vid.playingCuts) {
+      // Stop cuts playback
+      state.vid.el.pause();
+      state.vid.playingCuts = false;
+      $('videoPlayCuts').textContent = '✂️';
+      $('videoPlayCuts').classList.remove('playing');
+      return;
+    }
+    await playVideoWithCuts();
+  });
+  $('videoSeek').addEventListener('click', (e) => {
+    if (!state.vid.el) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientX - r.left) / r.width;
+    state.vid.el.currentTime = ratio * state.vid.el.duration;
+  });
+
+  // Export video with cuts (MediaRecorder + seek-based playback)
+  async function exportVideoWithCuts() {
+    if (!state.vid.el) {
+      toast('❌ ไม่มี video ให้ export', 'red');
+      return;
+    }
+    const keepRegions = state.segments.filter(s => s.kind === 'keep');
+    if (!keepRegions.length) {
+      toast('❌ ไม่มี keep region', 'red');
+      return;
+    }
+    // Check captureStream support
+    const v = state.vid.el;
+    const captureFn = v.captureStream || v.mozCaptureStream;
+    if (typeof captureFn !== 'function') {
+      toast('❌ Browser ไม่รองรับ video export', 'red');
+      return;
+    }
+    loading(true, lang === 'th' ? 'กำลัง Export วิดีโอ…' : 'Exporting video…', lang === 'th' ? 'อย่าปิดหน้านี้' : 'Keep this tab open');
+    setExporting(true, 0);
+    $('exportPctVal').textContent = (lang === 'th' ? 'เริ่มต้น…' : 'Starting…');
+    try {
+      // Compute expected duration (sum of keep regions) and total expected size
+      const totalKeepDur = keepRegions.reduce((s, r) => s + (r.end - r.start), 0);
+      const expectedSizeBytes = Math.ceil(totalKeepDur * 5_125_000 / 8); // 5 Mbps video + 128 kbps audio ≈ 5.125 Mbps
+      $('exportPctVal').textContent = (lang === 'th' ? `0% · เป้า ${(expectedSizeBytes/1024/1024).toFixed(1)}MB` : `0% · target ${(expectedSizeBytes/1024/1024).toFixed(1)}MB`);
+      // Unmute video for export (we want audio in output)
+      v.muted = false;
+      v.volume = 1.0;
+      // Setup stream from video element
+      const stream = captureFn.call(v);
+      // Choose best supported mime
+      const mimeCandidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm',
+      ];
+      let mimeType = '';
+      for (const m of mimeCandidates) {
+        if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(m)) { mimeType = m; break; }
+      }
+      if (!mimeType) throw new Error('MediaRecorder does not support webm');
+      const rec = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5_000_000, audioBitsPerSecond: 128_000 });
+      const chunks = [];
+      let bytesRecorded = 0;
+      rec.ondataavailable = e => {
+        if (e.data && e.data.size) {
+          chunks.push(e.data);
+          bytesRecorded += e.data.size;
+          // Update progress with REAL byte count
+          const pct = Math.min(95, (bytesRecorded / expectedSizeBytes) * 100);
+          tickExportProgress(pct, 100);
+          $('exportPctVal').textContent = (lang === 'th' ? `บันทึก ${(bytesRecorded/1024/1024).toFixed(1)}MB / ${(expectedSizeBytes/1024/1024).toFixed(1)}MB · ` : `Recorded ${(bytesRecorded/1024/1024).toFixed(1)}MB / ${(expectedSizeBytes/1024/1024).toFixed(1)}MB · `) + pct.toFixed(0) + '%';
+        }
+      };
+      const done = new Promise(res => { rec.onstop = res; });
+      // Seek-based playback: play each keep region in sequence
+      v.currentTime = keepRegions[0].start;
+      v.muted = false;
+      v.volume = 1.0;
+      rec.start(100);
+      for (let i = 0; i < keepRegions.length; i++) {
+        const r = keepRegions[i];
+        v.currentTime = r.start;
+        await new Promise(res => {
+          const onSeeked = () => { v.removeEventListener('seeked', onSeeked); res(); };
+          v.addEventListener('seeked', onSeeked);
+        });
+        await v.play();
+        await new Promise(res => {
+          const onUpdate = () => {
+            if (v.currentTime >= r.end - 0.05) {
+              v.removeEventListener('timeupdate', onUpdate);
+              v.pause();
+              res();
+            }
+          };
+          v.addEventListener('timeupdate', onUpdate);
+          // Safety timeout
+          setTimeout(() => { v.removeEventListener('timeupdate', onUpdate); v.pause(); res(); }, (r.end - r.start) * 1000 + 500);
+        });
+      }
+      rec.stop();
+      await done;
+      // Final 100% update
+      $('exportProgressBar').style.width = '100%';
+      $('exportPctVal').textContent = '100%';
+      const blob = new Blob(chunks, { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const base = state.fileName.replace(/\.[^.]+$/, '');
+      a.href = url;
+      a.download = `${base}_no-dead-air.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      // Restore muted
+      v.muted = true;
+      v.volume = 0;
+      loading(false);
+      const sizeMB = (blob.size / 1024 / 1024).toFixed(2);
+      const origMB = (state.fileSize / 1024 / 1024).toFixed(2);
+      const ratio = state.fileSize > 0 ? Math.round((1 - blob.size / state.fileSize) * 100) : 0;
+      $('exportPctVal').textContent = (lang === 'th' ? `✅ ${sizeMB}MB (ลด ${ratio}% จาก ${origMB}MB)` : `✅ ${sizeMB}MB (-${ratio}% from ${origMB}MB)`);
+      setTimeout(() => setExporting(false, 0), 2000);
+      toast('✅ ' + (lang === 'th' ? `Export ${sizeMB}MB · ลด ${ratio}%` : `Exported ${sizeMB}MB · ${ratio}% smaller`), 'green');
+    } catch (e) {
+      console.error(e);
+      loading(false);
+      setExporting(false, 0);
+      toast('❌ ' + (e.message || 'video export failed'), 'red');
+    }
+  }
+
+  // Play video with seek-based cuts (preview, no recording)
+  async function playVideoWithCuts() {
+    if (!state.vid.el) return;
+    const keepRegions = state.segments.filter(s => s.kind === 'keep');
+    if (!keepRegions.length) {
+      toast(lang === 'th' ? '⚠️ ไม่มี keep region' : '⚠️ No keep regions', 'amber');
+      return;
+    }
+    const v = state.vid.el;
+    v.muted = false;
+    v.volume = 1.0;
+    state.vid.playingCuts = true;
+    $('videoPlayCuts').textContent = '⏹';
+    $('videoPlayCuts').classList.add('playing');
+    for (let i = 0; i < keepRegions.length && state.vid.playingCuts; i++) {
+      const r = keepRegions[i];
+      v.currentTime = r.start;
+      await new Promise(res => {
+        const onSeeked = () => { v.removeEventListener('seeked', onSeeked); res(); };
+        v.addEventListener('seeked', onSeeked);
+      });
+      await v.play();
+      await new Promise(res => {
+        const onUpdate = () => {
+          if (v.currentTime >= r.end - 0.05 || !state.vid.playingCuts) {
+            v.removeEventListener('timeupdate', onUpdate);
+            v.pause();
+            res();
+          }
+        };
+        v.addEventListener('timeupdate', onUpdate);
+        setTimeout(() => { v.removeEventListener('timeupdate', onUpdate); v.pause(); res(); }, (r.end - r.start) * 1000 + 500);
+      });
+    }
+    v.muted = true;
+    v.volume = 0;
+    state.vid.playingCuts = false;
+    $('videoPlayCuts').textContent = '✂️';
+    $('videoPlayCuts').classList.remove('playing');
+  }
+
+  // Resize
+  window.addEventListener('resize', debounce(() => {
+    if (state.audioBuffer) renderWaveforms();
+  }, 150));
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+/* =========================================================================
+   FEATURES v1.1 — 10 enhancements
+   ========================================================================= */
+
+/* ==================== v1.2: Settings persistence ==================== */
+const SETTINGS_KEY = 'dar_settings_v1';
+const DEFAULT_SETTINGS = { lang: null, fade: true, fadeMs: 10, autoAdapt: false };
+function loadSettings() {
+  try { return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); }
+  catch { return Object.assign({}, DEFAULT_SETTINGS); }
+}
+function saveSettings(s) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  updateSettingsInfo();
+}
+function updateSettingsInfo() {
+  const info = $('settingsInfo');
+  if (!info) return;
+  const presets = loadSavedPresets().length;
+  const settings = localStorage.getItem(SETTINGS_KEY);
+  const totalBytes = (settings ? settings.length : 0) + (localStorage.getItem(PRESET_KEY) || '').length;
+  info.innerHTML = `📦 <b>${presets}</b> saved presets · <b>${(totalBytes/1024).toFixed(1)} KB</b> used<br>🔑 key: <code>${SETTINGS_KEY}</code> + <code>${PRESET_KEY}</code>`;
+}
+function openSettings() {
+  $('settingsModal').classList.add('show');
+  updateSettingsInfo();
+}
+function closeSettings() {
+  $('settingsModal').classList.remove('show');
+}
+$('settingsBtn').addEventListener('click', openSettings);
+$('settingsClose').addEventListener('click', closeSettings);
+$('settingsBackdrop').addEventListener('click', closeSettings);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSettings(); });
+// Settings: language
+$$('#settingsLang button').forEach(b => b.addEventListener('click', () => {
+  const newLang = b.dataset.lang;
+  lang = newLang;
+  saveSettings(Object.assign(loadSettings(), { lang: newLang }));
+  applyLang();
+  renderSegList();
+  renderStats();
+  // Sync both lang switch UIs
+  syncLangSwitches(newLang);
+}));
+function syncLangSwitches(activeLang) {
+  $$('#langSwitch button, #settingsLang button').forEach(b => b.classList.toggle('active', b.dataset.lang === activeLang));
+}
+// Settings: fade
+$('settingsFade').addEventListener('change', e => {
+  const v = e.target.checked;
+  $('fadeChk').checked = v;
+  state.proc.fade = v;
+  saveSettings(Object.assign(loadSettings(), { fade: v }));
+  if (state.audioBuffer) { analyzeSilence(); renderEditor(); }
+  toast('✅ ' + (lang === 'th' ? 'Crossfade ' + (v ? 'เปิด' : 'ปิด') : 'Crossfade ' + (v ? 'on' : 'off')), 'green');
+});
+// Settings: fade duration
+$('settingsFadeMs').addEventListener('change', e => {
+  const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 10));
+  state.proc.fadeMs = v;
+  saveSettings(Object.assign(loadSettings(), { fadeMs: v }));
+  if (state.audioBuffer) { analyzeSilence(); renderEditor(); }
+  toast('✅ Crossfade ' + v + 'ms', 'green');
+});
+// Settings: auto-adapt
+$('settingsAutoAdapt').addEventListener('change', e => {
+  const v = e.target.checked;
+  saveSettings(Object.assign(loadSettings(), { autoAdapt: v }));
+  toast('✅ Auto-adapt ' + (v ? (lang === 'th' ? 'เปิด' : 'on') : (lang === 'th' ? 'ปิด' : 'off')), 'green');
+});
+// Settings: clear all data
+$('settingsClear').addEventListener('click', () => {
+  if (!confirm(lang === 'th' ? 'ลบข้อมูลทั้งหมด (presets + settings)?' : 'Clear all data (presets + settings)?')) return;
+  localStorage.removeItem(SETTINGS_KEY);
+  localStorage.removeItem(PRESET_KEY);
+  $('settingsFade').checked = true;
+  $('fadeChk').checked = true;
+  $('settingsFadeMs').value = 10;
+  $('settingsAutoAdapt').checked = false;
+  $('presetList').style.display = 'none';
+  $('presetDelete').disabled = true;
+  renderPresetList();
+  updateSettingsInfo();
+  toast('🗑 ' + (lang === 'th' ? 'ลบข้อมูลทั้งหมดแล้ว' : 'All data cleared'), 'green');
+});
+// Apply settings on boot
+function applyBootSettings() {
+  const s = loadSettings();
+  if (s.lang) {
+    lang = s.lang;
+    syncLangSwitches(lang);
+  }
+  $('settingsFade').checked = !!s.fade;
+  $('settingsAutoAdapt').checked = !!s.autoAdapt;
+  $('settingsFadeMs').value = s.fadeMs || 10;
+  // Reflect into live state
+  state.proc = state.proc || {};
+  state.proc.fade = !!s.fade;
+  state.proc.fadeMs = s.fadeMs || 10;
+  $('fadeChk').checked = !!s.fade;
+}
+applyBootSettings();
+
+/* ==================== F1+F2: Export state + progress ==================== */
+let isExporting = false;
+let exportProgressPct = 0;
+function setExporting(state, pct = 0) {
+  isExporting = state;
+  exportProgressPct = pct;
+  const exportBtn = $('exportBtn');
+  const reanalyzeBtn = $('reanalyzeBtn');
+  const resetBtn = $('resetBtn');
+  if (exportBtn) exportBtn.disabled = state;
+  if (reanalyzeBtn) reanalyzeBtn.disabled = state;
+  if (resetBtn) resetBtn.disabled = state;
+  $('exportProgressWrap').style.display = state ? 'block' : 'none';
+  $('exportProgressBar').style.width = pct + '%';
+  $('exportPctVal').textContent = Math.round(pct) + '%';
+}
+function tickExportProgress(currentTime, totalTime) {
+  const pct = totalTime > 0 ? Math.min(99, (currentTime / totalTime) * 100) : 0;
+  $('exportProgressBar').style.width = pct.toFixed(1) + '%';
+  $('exportPctVal').textContent = pct.toFixed(0) + '%';
+}
+
+/* ==================== F5: Click waveform to toggle keep/cut ==================== */
+function setupCanvasClicks() {
+  ['origCanvas', 'videoTimelineCanvas'].forEach(id => {
+    const c = $(id);
+    if (!c) return;
+    c.addEventListener('click', (e) => {
+      if (!state.segments.length) return;
+      const r = c.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const ratio = x / r.width;
+      const t = ratio * state.duration;
+      const seg = findSegAt(state.segments, t);
+      if (!seg) return;
+      const newKind = seg.kind === 'silence' ? 'keep' : 'silence';
+      // Toggle this segment
+      const newSegs = state.segments.map(s => s === seg ? { ...s, kind: newKind } : s);
+      // Re-merge consecutive same-kind segments
+      state.segments = mergeAdjacentSegments(newSegs);
+      analyzeSilence();
+      renderEditor();
+      const label = newKind === 'keep' ? '✅ เก็บ' : '✂️ ตัด';
+      const cssClass = newKind === 'keep' ? 'green' : 'red';
+      toast(label + ' ' + fmtTime(seg.start) + ' → ' + fmtTime(seg.end), cssClass);
+    });
+  });
+}
+function mergeAdjacentSegments(segs) {
+  if (!segs.length) return [];
+  const out = [{ ...segs[0] }];
+  for (let i = 1; i < segs.length; i++) {
+    const last = out[out.length - 1];
+    if (segs[i].kind === last.kind) {
+      last.end = segs[i].end;
+    } else {
+      out.push({ ...segs[i] });
+    }
+  }
+  return out;
+}
+
+/* ==================== F6: A/B auto-switch ==================== */
+let abInterval = null;
+let abActive = false;
+let abIsOrig = true;
+$('abToggle').addEventListener('change', (e) => {
+  if (e.target.checked) {
+    if (!state.audioBuffer || !state.processedBuffer) {
+      toast('⚠️ วิเคราะห์ก่อน', 'amber');
+      e.target.checked = false;
+      return;
+    }
+    abActive = true;
+    abIsOrig = true;
+    playSegment('orig');
+    toast('🔄 A/B เริ่มทำงาน', '');
+    abInterval = setInterval(() => {
+      if (!abActive) return;
+      stopAll();
+      setTimeout(() => {
+        abIsOrig = !abIsOrig;
+        playSegment(abIsOrig ? 'orig' : 'proc');
+        toast(abIsOrig ? '🎚️ Original' : '✂️ Processed', '');
+      }, 300);
+    }, 5000);
+  } else {
+    abActive = false;
+    if (abInterval) { clearInterval(abInterval); abInterval = null; }
+    stopAll();
+    toast('⏸ A/B หยุด', '');
+  }
+});
+
+/* ==================== F7: Preset buttons ==================== */
+const PRESETS = {
+  podcast:   { threshold: -45, minDur: 200, pad: 50,  label: '🎙️ Podcast/Voice' },
+  video:     { threshold: -35, minDur: 500, pad: 100, label: '🎬 Video/YouTube' },
+  interview: { threshold: -50, minDur: 100, pad: 30,  label: '🎤 Interview' },
+};
+function applyPreset(p) {
+  $('threshold').value = p.threshold;
+  $('minDur').value = p.minDur;
+  $('pad').value = p.pad;
+  $('thresholdVal').textContent = p.threshold + ' dB';
+  $('minDurVal').textContent = p.minDur + ' ms';
+  $('padVal').textContent = p.pad + ' ms';
+  state.proc.threshold = p.threshold;
+  state.proc.minDur = p.minDur;
+  state.proc.pad = p.pad;
+  if (state.audioBuffer) {
+    analyzeSilence();
+    renderEditor();
+  }
+  toast('✅ ' + p.label + ' (-' + Math.abs(p.threshold) + 'dB / ' + p.minDur + 'ms / ' + p.pad + 'ms)', 'green');
+}
+$('presetPodcast').addEventListener('click', () => applyPreset(PRESETS.podcast));
+$('presetVideo').addEventListener('click', () => applyPreset(PRESETS.video));
+$('presetInterview').addEventListener('click', () => applyPreset(PRESETS.interview));
+
+/* ==================== F8: Adaptive threshold ==================== */
+$('presetAdaptive').addEventListener('click', () => {
+  if (!state.audioBuffer) {
+    toast('⚠️ อัปโหลดไฟล์ก่อน', 'amber');
+    return;
+  }
+  const sr = state.audioBuffer.sampleRate;
+  const winSize = Math.max(1, Math.round(sr * 0.01));
+  const ch0 = state.audioBuffer.getChannelData(0);
+  const ch1 = state.audioBuffer.numberOfChannels > 1 ? state.audioBuffer.getChannelData(1) : null;
+  const total = state.audioBuffer.length;
+  const numWin = Math.ceil(total / winSize);
+  const dbs = [];
+  for (let w = 0; w < numWin; w++) {
+    const start = w * winSize;
+    const end = Math.min(start + winSize, total);
+    let sum = 0;
+    for (let i = start; i < end; i++) {
+      const a = ch0[i] + (ch1 ? ch1[i] : 0);
+      const s = a * 0.5;
+      sum += s * s;
+    }
+    const rms = Math.sqrt(sum / (end - start));
+    dbs.push(20 * Math.log10(rms + 1e-10));
+  }
+  dbs.sort((a, b) => a - b);
+  const p30 = dbs[Math.floor(dbs.length * 0.3)]; // 30th percentile = noise floor estimate
+  const newThr = Math.round(p30 + 5);
+  applyPreset({ threshold: newThr, minDur: state.proc.minDur, pad: state.proc.pad, label: '🧠 Adaptive' });
+  toast('🧠 Adaptive: ' + newThr + 'dB (noise floor ' + Math.round(p30) + 'dB + 5)', 'green');
+});
+
+/* ==================== F10: localStorage preset save/load ==================== */
+const PRESET_KEY = 'dar_presets_v1';
+function loadSavedPresets() {
+  try { return JSON.parse(localStorage.getItem(PRESET_KEY) || '[]'); }
+  catch { return []; }
+}
+function saveSavedPresets(presets) {
+  localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+}
+function renderPresetList() {
+  const presets = loadSavedPresets();
+  const sel = $('presetList');
+  const delBtn = $('presetDelete');
+  if (!presets.length) {
+    sel.style.display = 'none';
+    if (delBtn) delBtn.disabled = true;
+    $('presetInfo').textContent = '3 + 0 saved';
+    return;
+  }
+  sel.style.display = 'block';
+  sel.innerHTML = '<option value="">-- เลือก preset (' + presets.length + ') --</option>' +
+    presets.map(p => '<option value="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + ' (' + p.threshold + 'dB/' + p.minDur + 'ms)</option>').join('');
+  $('presetInfo').textContent = '3 + ' + presets.length + ' saved';
+  if (delBtn) delBtn.disabled = !sel.value;
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+$('presetSave').addEventListener('click', () => {
+  $('presetSavedRow').style.display = $('presetSavedRow').style.display === 'none' ? 'flex' : 'none';
+  if ($('presetSavedRow').style.display === 'flex') {
+    $('presetName').value = '';
+    $('presetName').focus();
+  }
+});
+$('presetSaveConfirm').addEventListener('click', () => {
+  const name = $('presetName').value.trim();
+  if (!name) { toast('⚠️ ใส่ชื่อ', 'amber'); return; }
+  const presets = loadSavedPresets();
+  const idx = presets.findIndex(p => p.name === name);
+  const entry = { name, threshold: state.proc.threshold, minDur: state.proc.minDur, pad: state.proc.pad, fade: state.proc.fade, ts: Date.now() };
+  if (idx >= 0) presets[idx] = entry;
+  else presets.push(entry);
+  saveSavedPresets(presets);
+  renderPresetList();
+  $('presetSavedRow').style.display = 'none';
+  toast('✅ บันทึก preset "' + name + '"', 'green');
+});
+$('presetList').addEventListener('change', (e) => {
+  // Enable/disable delete button based on selection
+  const delBtn = $('presetDelete');
+  if (delBtn) delBtn.disabled = !e.target.value;
+});
+$('presetList').addEventListener('dblclick', () => loadSelectedPreset());
+$('presetList').addEventListener('keydown', e => { if (e.key === 'Enter') loadSelectedPreset(); });
+
+function loadSelectedPreset() {
+  const sel = $('presetList');
+  const name = sel.value;
+  if (!name) return;
+  const presets = loadSavedPresets();
+  const p = presets.find(p => p.name === name);
+  if (!p) return;
+  applyPreset({ threshold: p.threshold, minDur: p.minDur, pad: p.pad, label: '💾 ' + p.name });
+  $('fadeChk').checked = !!p.fade;
+  $('settingsFade').checked = !!p.fade;
+  state.proc.fade = !!p.fade;
+  sel.value = '';
+  const delBtn = $('presetDelete');
+  if (delBtn) delBtn.disabled = true;
+}
+
+// Delete preset
+$('presetDelete').addEventListener('click', () => {
+  const sel = $('presetList');
+  const name = sel.value;
+  if (!name) return;
+  if (!confirm((lang === 'th' ? 'ลบ preset "' : 'Delete preset "') + name + (lang === 'th' ? '" ?' : '"?'))) return;
+  const presets = loadSavedPresets().filter(p => p.name !== name);
+  saveSavedPresets(presets);
+  renderPresetList();
+  updateSettingsInfo();
+  sel.value = '';
+  $('presetDelete').disabled = true;
+  toast('🗑 ' + (lang === 'th' ? 'ลบ preset "' : 'Deleted "') + name + (lang === 'th' ? '" แล้ว' : '"'), 'green');
+});
+
+/* ==================== F9: Batch processing ==================== */
+let batchQueue = [];
+let batchRunning = false;
+function showBatch() { $('batchCtrl').style.display = 'block'; }
+function updateBatchList() {
+  $('batchCount').textContent = batchQueue.length;
+  const list = $('batchQueue');
+  list.innerHTML = '';
+  batchQueue.forEach((b, i) => {
+    const div = document.createElement('div');
+    div.className = 'batch-item';
+    let statusEmoji = '⏳';
+    if (b.status === 'done') statusEmoji = '✓';
+    else if (b.status === 'err') statusEmoji = '✗';
+    else if (b.status === 'processing') statusEmoji = '⚙';
+    const statusClass = b.status === 'done' ? 'done' : b.status === 'err' ? 'err' : b.status === 'processing' ? 'processing' : '';
+    div.innerHTML = '<span class="name">' + escapeHtml(b.name) + '</span><span class="status ' + statusClass + '">' + statusEmoji + '</span>';
+    list.appendChild(div);
+  });
+}
+$('batchProcess').addEventListener('click', async () => {
+  if (!batchQueue.length || batchRunning) return;
+  batchRunning = true;
+  $('batchProcess').disabled = true;
+  const doneCount = { val: 0 };
+  for (let i = 0; i < batchQueue.length; i++) {
+    const b = batchQueue[i];
+    b.status = 'processing';
+    updateBatchList();
+    try {
+      let audioData;
+      if (detectKind(b.name) === 'video') {
+        audioData = await extractAudioFromVideo(b.file);
+      } else {
+        const ab = await b.file.arrayBuffer();
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        state.audioBuffer = await ctx.decodeAudioData(ab.slice(0));
+        ctx.close();
+      }
+      analyzeSilence();
+      buildProcessedBuffer();
+      const base = b.name.replace(/\.[^.]+$/, '');
+      const blob = encodeWAV(state.processedBuffer);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = base + '_no-dead-air.wav';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      b.status = 'done';
+      doneCount.val++;
+    } catch (e) {
+      console.error(e);
+      b.status = 'err';
+    }
+    updateBatchList();
+    await new Promise(r => setTimeout(r, 50));
+  }
+  batchRunning = false;
+  $('batchProcess').disabled = false;
+  toast('✅ Batch: ' + doneCount.val + '/' + batchQueue.length + ' สำเร็จ', doneCount.val === batchQueue.length ? 'green' : 'amber');
+});
+// Override handleFile to support multiple files (v1.3: real multi-file switcher)
+const _origHandleFile = handleFile;
+handleFile = function(file) {
+  if (file && file.length) {
+    file = Array.from(file);
+  }
+  if (Array.isArray(file)) {
+    // Add all files to state.files, then decode & switch to first new one
+    const newOnes = [];
+    file.forEach(f => {
+      // Skip duplicates by name+size
+      const exists = state.files.some(ef => ef.name === f.name && ef.size === f.size);
+      if (exists) return;
+      state.files.push({
+        id: 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        file: f,
+        name: f.name,
+        size: f.size,
+        kind: detectKind(f.name),
+        audioBuffer: null,
+        segments: [],
+        processedBuffer: null,
+        status: 'pending',
+        error: null,
+      });
+      newOnes.push(f);
+      // Also add to legacy batchQueue for fallback display
+      batchQueue.push({ name: f.name, file: f, size: f.size, status: 'pending' });
+    });
+    showBatch();
+    updateBatchList();
+    renderFileTabs();
+    if (!newOnes.length) {
+      // All duplicates — just switch to first existing
+      if (state.activeFileIndex < 0) state.activeFileIndex = 0;
+      return;
+    }
+    // Use the ORIGINAL handleFile on the first new file (does full UI setup + decode + render)
+    // Then decode the rest in background
+    if (state.activeFileIndex < 0 && state.files.length) {
+      // Find index of first newOne in state.files
+      const firstNew = newOnes[0];
+      const idx = state.files.findIndex(ef => ef.name === firstNew.name && ef.size === firstNew.size);
+      if (idx >= 0) {
+        saveCurrentToFile();
+        state.activeFileIndex = idx;
+        renderFileTabs();
+        // Trigger original full pipeline via the _origHandleFile callback path
+        // It sets state.audioBuffer/segments/processedBuffer; sync back to state.files[idx] after
+        _origHandleFile(firstNew);
+        // Sync active file's buffer/segments/processedBuffer back
+        const f0 = state.files[idx];
+        f0.audioBuffer = state.audioBuffer;
+        f0.segments = state.segments;
+        f0.processedBuffer = state.processedBuffer;
+        f0.duration = state.duration;
+        f0.sampleRate = state.sampleRate;
+        f0.numChannels = state.numChannels;
+        f0.fileKind = state.fileKind;
+        f0.size = state.fileSize;
+        f0.status = 'decoded';
+        // Decode remaining files in background
+        for (let i = 0; i < newOnes.length; i++) {
+          if (i === 0) continue;
+          const ni = state.files.findIndex(ef => ef.name === newOnes[i].name && ef.size === newOnes[i].size);
+          if (ni >= 0) decodeFileInBackground(ni);
+        }
+        renderFileTabs();
+      }
+    } else {
+      // Already have active file — just decode all new ones
+      for (let i = 0; i < newOnes.length; i++) {
+        const ni = state.files.findIndex(ef => ef.name === newOnes[i].name && ef.size === newOnes[i].size);
+        if (ni >= 0) decodeFileInBackground(ni);
+      }
+    }
+    toast('📦 ' + (lang === 'th' ? 'เพิ่ม' : 'Added') + ' ' + newOnes.length + ' ' + (lang === 'th' ? 'ไฟล์' : 'files') + (lang === 'th' ? ' — คลิก tab เพื่อสลับ' : ' — click tab to switch'), '');
+    return;
+  }
+  // Single file → add to state.files then decode (call original for full setup)
+  if (file) {
+    const exists = state.files.some(ef => ef.name === file.name && ef.size === file.size);
+    if (!exists) {
+      state.files.push({
+        id: 'f_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+        file: file,
+        name: file.name,
+        size: file.size,
+        kind: detectKind(file.name),
+        audioBuffer: null,
+        segments: [],
+        processedBuffer: null,
+        status: 'pending',
+        error: null,
+      });
+      batchQueue.push({ name: file.name, file: file, size: file.size, status: 'pending' });
+    }
+    const newIdx = state.files.findIndex(f => f.name === file.name && f.size === file.size);
+    if (newIdx >= 0) {
+      saveCurrentToFile();
+      state.activeFileIndex = newIdx;
+      renderFileTabs();
+    }
+    showBatch();
+    updateBatchList();
+    _origHandleFile(file);
+    // Sync active file's buffer back
+    if (newIdx >= 0) {
+      const f0 = state.files[newIdx];
+      f0.audioBuffer = state.audioBuffer;
+      f0.segments = state.segments;
+      f0.processedBuffer = state.processedBuffer;
+      f0.duration = state.duration;
+      f0.sampleRate = state.sampleRate;
+      f0.numChannels = state.numChannels;
+      f0.fileKind = state.fileKind;
+      f0.size = state.fileSize;
+      f0.status = 'decoded';
+      renderFileTabs();
+    }
+  }
+};
+
+async function decodeFileInBackground(idx) {
+  const f = state.files[idx];
+  if (!f || f.status === 'decoded' || f.status === 'processing') return;
+  f.status = 'processing';
+  renderFileTabs();
+  try {
+    if (f.kind === 'video') {
+      // Video: use a temporary video element to get duration + extract audio
+      const url = URL.createObjectURL(f.file);
+      const v = document.createElement('video');
+      v.src = url;
+      v.muted = true;
+      v.preload = 'metadata';
+      await new Promise((res, rej) => {
+        v.onloadedmetadata = res;
+        v.onerror = () => rej(new Error('video load failed'));
+      });
+      f.duration = v.duration;
+      // Extract audio via captureStream
+      const stream = (v.captureStream || v.mozCaptureStream).call(v);
+      const audioTracks = stream.getAudioTracks();
+      if (!audioTracks.length) {
+        URL.revokeObjectURL(url);
+        throw new Error('No audio track');
+      }
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = ctx.createMediaStreamSource(stream);
+      const dest = ctx.createMediaStreamDestination();
+      src.connect(dest);
+      // Record via MediaRecorder to get audio buffer
+      const rec = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const chunks = [];
+      rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+      const done = new Promise(res => { rec.onstop = res; });
+      rec.start(100);
+      await new Promise(r => setTimeout(r, v.duration * 1000 + 500));
+      rec.stop();
+      await done;
+      const blob = new Blob(chunks, { type: 'audio/webm' });
+      const ab = await blob.arrayBuffer();
+      f.audioBuffer = await ctx.decodeAudioData(ab.slice(0));
+      f.sampleRate = f.audioBuffer.sampleRate;
+      f.numChannels = f.audioBuffer.numberOfChannels;
+      URL.revokeObjectURL(url);
+      ctx.close();
+    } else {
+      const ab = await f.file.arrayBuffer();
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      f.audioBuffer = await ctx.decodeAudioData(ab.slice(0));
+      f.sampleRate = f.audioBuffer.sampleRate;
+      f.numChannels = f.audioBuffer.numberOfChannels;
+      f.duration = f.audioBuffer.duration;
+      ctx.close();
+    }
+    f.status = 'decoded';
+    // If this is the active file, load it into editor
+    if (idx === state.activeFileIndex) {
+      loadFileToEditor(f);
+    }
+    // Re-analyze with current settings
+    if (f.audioBuffer) {
+      const savedAB = state.audioBuffer;
+      const savedSegs = state.segments;
+      const savedProc = state.processedBuffer;
+      const savedDur = state.duration;
+      const savedSR = state.sampleRate;
+      const savedNC = state.numChannels;
+      state.audioBuffer = f.audioBuffer;
+      state.segments = [];
+      state.processedBuffer = null;
+      state.duration = f.audioBuffer.duration;
+      state.sampleRate = f.sampleRate;
+      state.numChannels = f.numChannels;
+      analyzeSilence();
+      buildProcessedBuffer();
+      f.segments = state.segments;
+      f.processedBuffer = state.processedBuffer;
+      // Restore active editor state
+      state.audioBuffer = savedAB;
+      state.segments = savedSegs;
+      state.processedBuffer = savedProc;
+      state.duration = savedDur;
+      state.sampleRate = savedSR;
+      state.numChannels = savedNC;
+    }
+    renderFileTabs();
+  } catch (e) {
+    console.error('decode error', f.name, e);
+    f.status = 'error';
+    f.error = e.message || 'decode failed';
+    renderFileTabs();
+  }
+}
+
+/* ==================== Hooks: integrate with existing export flow ==================== */
+// Patch encodeWAV export to track progress
+const _origExportWav = encodeWAV;
+encodeWAV = function(buffer) {
+  // Track large WAV encodes via chunked writes
+  return _origExportWav(buffer);
+};
+// v1.2: Real progress is now handled inside exportWav() and exportVideoWithCuts()
+// The capture-phase time-based estimate above is removed because v1.2 exportWav()
+// tracks the encode duration + bytes written directly. No more redundant handler.
+
+/* ==================== Boot: initialize new features ==================== */
+renderPresetList();
+setupCanvasClicks();
+$('presetInfo').textContent = '3 + ' + loadSavedPresets().length + ' saved';
+
+/* ==================== Boot ==================== */
+applyLang();
+wireEvents();
+
+// Demo sample on first load (small silent+sine wave) — for first-impression
+function showDemo() {
+  // Skip demo if user has already uploaded
+  if (state.audioBuffer) return;
+  // Generate 8s of "speech-like" audio with 2 silences
+  const sr = 22050;
+  const dur = 8;
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const buf = ctx.createBuffer(1, sr * dur, sr);
+  const ch = buf.getChannelData(0);
+  // Speech segments: 0-2s, 3-5s, 6-8s
+  const speechRanges = [[0,2],[3,5],[6,8]];
+  for (let s of speechRanges) {
+    for (let i = Math.floor(s[0]*sr); i < Math.floor(s[1]*sr); i++) {
+      // 3 oscillators approximating formants + amplitude envelope
+      const t = i / sr;
+      const env = Math.min(1, (t - s[0])*4) * Math.min(1, (s[1]-t)*4);
+      ch[i] = env * 0.4 * (
+        Math.sin(2*Math.PI*180*t) * 0.5 +
+        Math.sin(2*Math.PI*1200*t + Math.sin(2*Math.PI*5*t)) * 0.3 +
+        Math.sin(2*Math.PI*2400*t) * 0.2
+      ) * (0.5 + 0.5 * Math.sin(2*Math.PI*3*t));
+    }
+  }
+  // Background noise
+  for (let i = 0; i < ch.length; i++) ch[i] += (Math.random() - 0.5) * 0.002;
+  state.audioBuffer = buf;
+  state.processedBuffer = null;
+  state.segments = [];
+  state.sampleRate = sr;
+  state.numChannels = 1;
+  state.duration = dur;
+  state.fileName = 'demo-sample.wav';
+  state.fileSize = 0;
+  state.fileKind = 'audio';
+  $('fileName').textContent = '🎁 ' + (lang === 'th' ? 'ตัวอย่าง (8 วินาที) — ลองกดเล่นดู' : 'Demo (8s) — click play');
+  $('fileIco').textContent = '🎁';
+  $('fileInfo').innerHTML = `
+    <span>Mono</span>
+    <span>22050 Hz</span>
+    <span>0:08</span>
+    <span>${lang === 'th' ? 'ตัวอย่าง' : 'sample'}</span>
+  `;
+  state.proc = { threshold: -40, minDur: 300, pad: 80, fade: true };
+  $('threshold').value = -40;
+  $('minDur').value = 300;
+  $('pad').value = 80;
+  $('fadeChk').checked = true;
+  $('thresholdVal').textContent = '-40 dB';
+  $('minDurVal').textContent = '300 ms';
+  $('padVal').textContent = '80 ms';
+  analyzeSilence();
+  $('drop').style.display = 'none';
+  $('editor').classList.add('show');
+  // Wait for layout before drawing waveforms
+  requestAnimationFrame(() => requestAnimationFrame(() => renderEditor()));
+  ctx.close();
+}
+
+// Auto-show demo on first load
+setTimeout(showDemo, 200);
+</script>
+</body>
+</html>

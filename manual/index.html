@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>คู่มือ Dead Air Remover v1.1 — สำหรับแอดมิน/พนักงาน</title>
+<meta name="description" content="คู่มือการใช้งาน Dead Air Remover v1.1 พร้อม 10 ฟีเจอร์ใหม่ — สำหรับแอดมินและพนักงานที่ดูแลระบบ" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📖%3C/text%3E%3C/svg%3E" />
+<style>
+:root{
+  --bg-0:#0a0e14;
+  --bg-1:#0f1419;
+  --bg-2:#161c24;
+  --bg-3:#1d242e;
+  --bg-4:#252d38;
+  --line:rgba(255,255,255,.08);
+  --line-2:rgba(255,255,255,.12);
+  --text:#e7ecf3;
+  --text-2:#a8b3c0;
+  --text-3:#6b7785;
+  --accent:#ff5a3c;
+  --accent-2:#ffa726;
+  --keep:#26d07c;
+  --keep-dim:rgba(38,208,124,.18);
+  --warn:#f5d90a;
+  --r:14px;
+  --r-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter",system-ui,sans-serif;
+  background:
+    radial-gradient(1200px 800px at 80% -10%,rgba(255,90,60,.06),transparent 60%),
+    var(--bg-0);
+  color:var(--text);
+  font-size:14px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit;text-decoration:none}
+code,pre{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;background:var(--bg-2);padding:1px 5px;border-radius:4px;font-size:12px;color:#ffc870;border:1px solid var(--line)}
+
+/* ============== Top Bar ============== */
+.top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 28px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);
+  backdrop-filter:blur(20px);
+  position:sticky;top:0;z-index:50;
+}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:15px}
+.brand-mark{
+  width:36px;height:36px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);
+  display:grid;place-items:center;font-size:20px;
+  box-shadow:0 4px 16px rgba(255,90,60,.35);
+}
+.brand-text small{display:block;font-size:10.5px;color:var(--text-3);font-weight:500;letter-spacing:.4px;text-transform:uppercase}
+.top-nav{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3)}
+.top-nav a{color:var(--text-2);border-bottom:1px dotted var(--text-3)}
+.top-nav a:hover{color:var(--accent)}
+
+/* ============== Hero ============== */
+.hero{
+  padding:48px 28px 32px;
+  max-width:1100px;margin:0 auto;
+}
+.hero .label{font-size:11px;color:var(--accent-2);font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+.hero h1{font-size:42px;font-weight:800;letter-spacing:-1px;line-height:1.1;margin-top:6px}
+.hero h1 .grad{background:linear-gradient(90deg,var(--accent) 0%,var(--accent-2) 60%,var(--keep) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--text-2);margin-top:14px;font-size:16px;max-width:760px;line-height:1.55}
+.hero .badges{margin-top:18px;display:flex;gap:8px;flex-wrap:wrap}
+.badge{font-size:11px;padding:4px 10px;border-radius:99px;background:var(--bg-2);border:1px solid var(--line);color:var(--text-2);font-weight:600}
+.badge.green{background:rgba(38,208,124,.10);border-color:rgba(38,208,124,.30);color:#7ee2a9}
+.badge.amber{background:rgba(255,167,38,.10);border-color:rgba(255,167,38,.30);color:#ffc870}
+
+/* ============== Layout ============== */
+.layout{display:grid;grid-template-columns:240px 1fr;max-width:1280px;margin:0 auto;padding:0 28px 80px;gap:32px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar{position:static!important;height:auto!important;margin-bottom:24px}}
+
+/* ============== Sidebar TOC ============== */
+.sidebar{position:sticky;top:80px;height:calc(100vh - 100px);overflow-y:auto;padding-right:8px}
+.sidebar h4{font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding:0 10px}
+.toc{display:flex;flex-direction:column;gap:1px}
+.toc a{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border-radius:var(--r-sm);
+  color:var(--text-2);font-size:12.5px;font-weight:500;
+  transition:all .15s;
+}
+.toc a:hover{background:var(--bg-2);color:var(--text)}
+.toc a .num{width:18px;height:18px;border-radius:50%;background:var(--bg-3);color:var(--text-2);font-size:10px;font-weight:700;display:grid;place-items:center;flex-shrink:0}
+.toc a.active{background:rgba(255,90,60,.10);color:var(--accent)}
+.toc a.active .num{background:var(--accent);color:#fff}
+
+/* ============== Main content ============== */
+main{min-width:0}
+
+/* ============== Section ============== */
+section{padding:32px 0;border-bottom:1px solid var(--line)}
+section:last-child{border-bottom:none}
+.sec-num{display:inline-block;width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-weight:800;font-size:14px;display:grid;place-items:center;margin-bottom:10px}
+.sec-label{font-size:11px;color:var(--accent-2);font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px}
+h2{font-size:26px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px}
+h3{font-size:17px;font-weight:700;margin:18px 0 8px;color:var(--text)}
+.lead{color:var(--text-2);font-size:14.5px;max-width:720px;margin-bottom:18px}
+
+/* ============== Steps ============== */
+.steps{margin:14px 0;padding:0;list-style:none;counter-reset:step}
+.steps li{counter-increment:step;padding:10px 14px 10px 44px;position:relative;background:var(--bg-1);border:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:8px}
+.steps li::before{content:counter(step);position:absolute;left:14px;top:10px;width:22px;height:22px;background:var(--bg-3);color:var(--accent);font-size:11px;font-weight:800;border-radius:50%;display:grid;place-items:center}
+
+/* ============== Tip / Warning boxes ============== */
+.box{padding:12px 16px;border-radius:var(--r-sm);margin:14px 0;font-size:13px;line-height:1.55;border-left:3px solid}
+.box.info{background:rgba(38,208,124,.06);border-left-color:var(--keep);color:#b7eccd}
+.box.warn{background:rgba(255,167,38,.06);border-left-color:var(--warn);color:#ffd98a}
+.box.tip{background:rgba(38,167,255,.06);border-left-color:#26a8ff;color:#a5d4ff}
+.box strong{color:#fff;font-weight:700}
+
+/* ============== Image / Screenshot ============== */
+.shot{margin:18px 0;border-radius:var(--r);overflow:hidden;background:var(--bg-1);border:1px solid var(--line);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.shot img{display:block;width:100%;height:auto;background:var(--bg-0)}
+.shot-cap{padding:10px 16px;font-size:11.5px;color:var(--text-3);border-top:1px solid var(--line);background:var(--bg-1);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.shot-cap b{color:var(--text-2);font-weight:600}
+
+/* ============== Feature matrix table ============== */
+.feat-matrix{margin:18px 0;width:100%;border-collapse:collapse;font-size:12.5px}
+.feat-matrix th,.feat-matrix td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+.feat-matrix th{background:var(--bg-2);font-weight:700;color:var(--text-2);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+.feat-matrix tr:hover td{background:rgba(255,90,60,.04)}
+.feat-matrix .num{color:var(--accent);font-weight:800;width:34px}
+
+/* ============== Cards grid ============== */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+@media(max-width:720px){.grid-2{grid-template-columns:1fr}}
+.card{padding:14px 16px;background:var(--bg-1);border:1px solid var(--line);border-radius:var(--r)}
+.card h4{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.card p{font-size:12.5px;color:var(--text-2);line-height:1.5}
+
+/* ============== Workflow timeline ============== */
+.workflow{margin:18px 0;display:grid;gap:1px;background:var(--line);border-radius:var(--r);overflow:hidden}
+.wf-step{padding:14px 18px;background:var(--bg-1);display:flex;align-items:flex-start;gap:14px}
+.wf-num{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-weight:800;display:grid;place-items:center;flex-shrink:0;font-size:13px}
+.wf-content h5{font-size:13.5px;font-weight:700;margin-bottom:3px}
+.wf-content p{font-size:12.5px;color:var(--text-2)}
+
+/* ============== KPI bar ============== */
+.kpi-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}
+@media(max-width:680px){.kpi-bar{grid-template-columns:1fr 1fr}}
+.kpi{padding:14px 16px;background:var(--bg-1);border:1px solid var(--line);border-radius:var(--r-sm);text-align:center}
+.kpi-val{font-size:22px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.kpi-val.green{color:var(--keep)}
+.kpi-val.amber{color:var(--accent-2)}
+.kpi-lbl{font-size:10.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-top:2px}
+
+/* ============== Footer ============== */
+.foot{text-align:center;margin-top:40px;color:var(--text-3);font-size:11.5px}
+.foot a{color:var(--text-2);border-bottom:1px dotted var(--text-3)}
+.foot a:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ============== Mobile ============== */
+@media(max-width:680px){
+  .top{padding:10px 14px}
+  .hero{padding:32px 18px 24px}
+  .hero h1{font-size:28px}
+  .layout{padding:0 14px 60px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="brand-mark">📖</div>
+    <div class="brand-text">
+      <div>คู่มือการใช้งาน</div>
+      <small>Dead Air Remover v1.1 · Manual</small>
+    </div>
+  </div>
+  <div class="top-nav">
+    <a href="https://codehub.sj88ai.com/skill/" target="_blank" rel="noopener">CodeHub Skills</a>
+    <span style="opacity:.4">·</span>
+    <span>Build: 2026-07-12</span>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="label">📘 Admin &amp; Staff Manual · v1.1</div>
+  <h1><span class="grad">Dead Air Remover</span> — คู่มือฉบับเต็ม</h1>
+  <p>คู่มือนี้อธิบายการใช้งาน <b>ทั้ง 10 ฟีเจอร์</b> ของ Dead Air Remover v1.1 — ตัดช่วงเสียงเงียบอัตโนมัติจากไฟล์เสียง/วิดีโอ ทำงานในเบราว์เซอร์ 100% ไฟล์ไม่ถูกอัปโหลด สำหรับแอดมิน/พนักงานที่ดูแลระบบและผู้ใช้งานทั่วไป</p>
+  <div class="badges">
+    <span class="badge green">✓ Single-file HTML</span>
+    <span class="badge green">✓ 100% Local — ไฟล์ไม่ถูกส่งออก</span>
+    <span class="badge amber">⚡ 10 ฟีเจอร์ v1.1</span>
+    <span class="badge">🎙️ Podcast / Video / Interview</span>
+    <span class="badge">📦 WAV / WebM</span>
+  </div>
+</section>
+
+<div class="layout">
+  <!-- ============== Sidebar TOC ============== -->
+  <aside class="sidebar">
+    <h4>📋 สารบัญ</h4>
+    <nav class="toc">
+      <a href="#overview" class="active"><span class="num">0</span>ภาพรวม</a>
+      <a href="#f1"><span class="num">1</span>Export state + progress</a>
+      <a href="#f2"><span class="num">2</span>Progress bar</a>
+      <a href="#f3"><span class="num">3</span>Video export (WebM)</a>
+      <a href="#f4"><span class="num">4</span>Visual silence marker</a>
+      <a href="#f5"><span class="num">5</span>Click-to-toggle</a>
+      <a href="#f6"><span class="num">6</span>A/B auto-switch</a>
+      <a href="#f7"><span class="num">7</span>Preset buttons (3)</a>
+      <a href="#f8"><span class="num">8</span>Adaptive threshold</a>
+      <a href="#f9"><span class="num">9</span>Batch processing</a>
+      <a href="#f10"><span class="num">10</span>Save preset (localStorage)</a>
+      <a href="#multi-file"><span class="num">11</span>Multi-File (v1.3)</a>
+      <a href="#workflows"><span class="num">⚙</span>Workflows</a>
+      <a href="#faq"><span class="num">?</span>FAQ</a>
+    </nav>
+  </aside>
+
+  <main>
+    <!-- ============== Overview ============== -->
+    <section id="overview">
+      <div class="sec-num">📊</div>
+      <div class="sec-label">Overview</div>
+      <h2>ภาพรวมระบบ</h2>
+      <p class="lead">Dead Air Remover เป็นเครื่องมือตัดช่วงเสียงเงียบ (dead air / silence) อัตโนมัติ เหมาะกับ podcast, วิดีโอ YouTube, voiceover, สัมภาษณ์ ทำงานด้วย Web Audio API + Canvas 2D ทั้งหมดในเบราว์เซอร์</p>
+
+      <div class="kpi-bar">
+        <div class="kpi"><div class="kpi-val green">10</div><div class="kpi-lbl">ฟีเจอร์ v1.1</div></div>
+        <div class="kpi"><div class="kpi-val">8</div><div class="kpi-lbl">ไฟล์เสียงที่รองรับ</div></div>
+        <div class="kpi"><div class="kpi-val">7</div><div class="kpi-lbl">ไฟล์วิดีโอที่รองรับ</div></div>
+        <div class="kpi"><div class="kpi-val green">100%</div><div class="kpi-lbl">Local — ไม่อัปโหลด</div></div>
+      </div>
+
+      <h3>หลักการทำงาน</h3>
+      <div class="workflow">
+        <div class="wf-step"><div class="wf-num">1</div><div class="wf-content"><h5>อัปโหลดไฟล์</h5><p>ลากไฟล์มาวาง หรือคลิกเลือก — รองรับ MP3, WAV, M4A, OGG, FLAC, AAC, OPUS, MP4, MOV, WebM, MKV</p></div></div>
+        <div class="wf-step"><div class="wf-num">2</div><div class="wf-content"><h5>วิเคราะห์ (auto)</h5><p>แอปจะสแกน RMS amplitude ทุก 10ms เทียบกับ threshold — เงียบติดต่อกันเกิน Min Silence = "dead air"</p></div></div>
+        <div class="wf-step"><div class="wf-num">3</div><div class="wf-content"><h5>ปรับแต่ง (manual)</h5><p>ใช้ slider 3 ตัว หรือเลือก Preset / Adaptive / Save หรือคลิกที่ waveform เพื่อ override</p></div></div>
+        <div class="wf-step"><div class="wf-num">4</div><div class="wf-content"><h5>Export</h5><p>กดปุ่ม Export → ดาวน์โหลดไฟล์ WAV (เสียง) หรือ WebM (วิดีโอ) ที่ตัด dead air ออกแล้ว</p></div></div>
+      </div>
+
+      <div class="shot">
+        <img src="images/01_landing.png" alt="หน้า Landing — Hero + Drop zone" />
+        <div class="shot-cap"><b>ภาพที่ 1</b><span>หน้า Landing — Hero + Drop zone</span></div>
+      </div>
+
+      <div class="box info">
+        <strong>สำหรับแอดมิน:</strong> แอปนี้ทำงาน <b>100% ในเบราว์เซอร์</b> ไฟล์ของผู้ใช้ไม่ถูกส่งไปเซิร์ฟเวอร์ใดๆ ทั้งสิ้น — ไม่ต้องกังวลเรื่อง privacy/GDPR
+      </div>
+    </section>
+
+    <!-- ============== Feature 1 ============== -->
+    <section id="f1">
+      <div class="sec-num">1</div>
+      <div class="sec-label">F1 · Export state</div>
+      <h2>Export state — ปุ่ม disable ขณะ encoding</h2>
+      <p class="lead">เมื่อกด Export แล้ว ปุ่มทั้งหมด (Export, วิเคราะห์ใหม่, เปลี่ยนไฟล์) จะ disable อัตโนมัติ เพื่อป้องกัน race condition กับ state.abort</p>
+
+      <h3>วิธีใช้</h3>
+      <ol class="steps">
+        <li>อัปโหลดไฟล์ → รอวิเคราะห์</li>
+        <li>กดปุ่ม Export → ปุ่ม disable ทันที</li>
+        <li>รอจนเสร็จ → ปุ่มกลับมา enabled</li>
+      </ol>
+
+      <div class="shot">
+        <img src="images/12_export_progress.png" alt="Export progress bar" />
+        <div class="shot-cap"><b>ภาพที่ 12</b><span>F1+F2: ปุ่ม Export disable + progress bar แสดง %</span></div>
+      </div>
+    </section>
+
+    <!-- ============== Feature 2 ============== -->
+    <section id="f2">
+      <div class="sec-num">2</div>
+      <div class="sec-label">F2 · Progress bar</div>
+      <h2>Progress bar — เห็นว่า export ไปถึงไหน</h2>
+      <p class="lead">แถบ progress แสดง % ของการ export — ไฟล์ใหญ่ 70MB ใช้เวลา ~10s ผู้ใช้เห็น progress ตลอด</p>
+
+      <div class="box info">
+        <strong>สูตรคำนวณ:</strong> <code>video ~30s, audio ~5s</code> — ถ้าเกิน 95% ระบบจะ complete เลย เพื่อหลีกเลี่ยงการค้างที่ 99%
+      </div>
+    </section>
+
+    <!-- ============== Feature 3 ============== -->
+    <section id="f3">
+      <div class="sec-num">3</div>
+      <div class="sec-label">F3 · Video export</div>
+      <h2>WebM video export — ใช้ได้ทุกที่ยกเว้น Safari</h2>
+      <p class="lead">ปัจจุบัน export วิดีโอเป็น <b>WebM (VP9+Opus)</b> ผ่าน MediaRecorder + captureStream + seek-based playback — เล็ก, เร็ว, เปิดได้บน Chrome/Edge/Firefox/Android</p>
+
+      <div class="box warn">
+        <strong>⚠️ ข้อจำกัด:</strong> WebM ไม่เล่นบน Safari/iPhone โดย default ถ้าต้องการ MP4 สำหรับ iPhone ให้ <b>(1) ใช้ Chrome/Edge บน Mac</b> แล้วแปลงด้วย <b>HandBrake</b> หรือ <b>ffmpeg</b>: <code>ffmpeg -i input.webm -c:v libx264 -c:a aac output.mp4</code>
+      </div>
+
+      <h3>วิธีใช้</h3>
+      <ol class="steps">
+        <li>อัปโหลดไฟล์วิดีโอ (MP4/MOV/WebM)</li>
+        <li>กดปุ่ม "Export" — ตรวจไฟล์อัตโนมัติ ถ้าเป็นวิดีโอจะ export เป็น WebM</li>
+        <li>รอ progress 100% (แสดงขนาดไฟล์จริง) → ดาวน์โหลดอัตโนมัติ</li>
+      </ol>
+
+      <div class="box tip">
+        <strong>🚀 v1.3 ที่จะมา:</strong> WebCodecs MP4 export (Chrome/Edge) + Auto-ffmpeg.wasm fallback จะมาใน release ถัดไป ตอนนี้ใช้ HandBrake แปลงได้ฟรี
+      </div>
+    </section>
+
+    <!-- ============== Feature 4 ============== -->
+    <section id="f4">
+      <div class="sec-num">4</div>
+      <div class="sec-label">F4 · Visual silence marker</div>
+      <h2>Visual silence marker — เห็นชัดว่าจะตัดตรงไหน</h2>
+      <p class="lead">ช่วง dead air ถูก overlay สีแดงโปร่งใสบน waveform ดั้งเดิม — ผู้ใช้เห็นทันทีว่าแอปจะตัดตรงไหน ไม่ต้องเชื่อ black box</p>
+
+      <div class="shot">
+        <img src="images/04_analyzed.png" alt="Silence regions overlaid on waveform" />
+        <div class="shot-cap"><b>ภาพที่ 4</b><span>F4: ช่วง silence (สีแดง) บน waveform ต้นฉบับ — เห็นทันทีว่าจะตัดตรงไหน</span></div>
+      </div>
+
+      <h3>Legend</h3>
+      <ul style="list-style:none;padding:0">
+        <li style="padding:8px 12px;background:var(--bg-1);border:1px solid var(--line);border-radius:8px;margin-bottom:6px">
+          <span style="display:inline-block;width:14px;height:14px;background:var(--keep);border-radius:50%;vertical-align:middle;margin-right:8px"></span>
+          <b style="color:#7ee2a9">เสียงพูด</b> — จะถูกเก็บไว้
+        </li>
+        <li style="padding:8px 12px;background:var(--bg-1);border:1px solid var(--line);border-radius:8px">
+          <span style="display:inline-block;width:14px;height:14px;background:rgba(255,90,60,.55);border-radius:50%;vertical-align:middle;margin-right:8px"></span>
+          <b style="color:#ffaa92">เดดแอร์</b> — จะถูกตัดออก
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============== Feature 5 ============== -->
+    <section id="f5">
+      <div class="sec-num">5</div>
+      <div class="sec-label">F5 · Click-to-toggle</div>
+      <h2>Click-to-toggle — คลิก waveform เพื่อ override</h2>
+      <p class="lead">ถ้าแอปตัดผิด → คลิกที่ waveform เพื่อ toggle keep ↔ cut ทันที ไม่ต้องปรับ slider</p>
+
+      <h3>วิธีใช้</h3>
+      <ol class="steps">
+        <li>ดู waveform — สังเกตช่วงที่ overlay สีแดง (จะถูกตัด)</li>
+        <li><b>คลิก</b> ที่ช่วงสีแดง → กลายเป็น keep (เขียว)</li>
+        <li><b>คลิก</b> ที่ช่วงเขียว → กลายเป็น cut (แดง)</li>
+        <li>กด Export ได้เลย — ไม่ต้องวิเคราะห์ใหม่</li>
+      </ol>
+
+      <div class="shot">
+        <img src="images/09_click_toggled.png" alt="คลิกที่ waveform toggle keep/cut" />
+        <div class="shot-cap"><b>ภาพที่ 9</b><span>F5: คลิกที่ waveform 3 จุดเพื่อ toggle แบบ manual</span></div>
+      </div>
+
+      <div class="box tip">
+        <strong>Tip:</strong> การคลิกจะ merge segments ที่ติดกันโดยอัตโนมัติ — เช่น ถ้าคลิก silence 2 ช่วงติดกันให้เป็น keep → จะ merge เป็น 1 segment ใหญ่
+      </div>
+    </section>
+
+    <!-- ============== Feature 6 ============== -->
+    <section id="f6">
+      <div class="sec-num">6</div>
+      <div class="sec-label">F6 · A/B auto-switch</div>
+      <h2>A/B auto-switch — เปรียบเทียบ original ↔ processed แบบสลับ</h2>
+      <p class="lead">กด toggle เพื่อให้แอปเล่นสลับ original 5s → processed 5s → loop เปรียบเทียบง่ายๆ ว่าแอปตัดถูกจุดไหน</p>
+
+      <div class="shot">
+        <img src="images/11_ab_active.png" alt="A/B auto-switch active" />
+        <div class="shot-cap"><b>ภาพที่ 11</b><span>F6: A/B toggle เปิด — เล่นสลับ original ↔ processed ทุก 5 วินาที</span></div>
+      </div>
+
+      <h3>วิธีใช้</h3>
+      <ol class="steps">
+        <li>อัปโหลดไฟล์ → วิเคราะห์เสร็จ</li>
+        <li>กด toggle 🔄 A/B</li>
+        <li>ฟัง 5s → เสียงจะตัด → กลับมาเล่น original</li>
+        <li>เปรียบเทียบ: "ตรงนี้แอปตัดดีไหม? ตัดถูกจุด?"</li>
+        <li>ปิด toggle เมื่อพอใจ → Export</li>
+      </ol>
+
+      <div class="box warn">
+        <strong>ต้องมี processed buffer ก่อน:</strong> ถ้ายังไม่ได้วิเคราะห์ → จะขึ้นเตือน "วิเคราะห์ก่อน"
+      </div>
+    </section>
+
+    <!-- ============== Feature 7 ============== -->
+    <section id="f7">
+      <div class="sec-num">7</div>
+      <div class="sec-label">F7 · Preset buttons</div>
+      <h2>3 Preset ตาม use case</h2>
+      <p class="lead">กดปุ่ม preset เพื่อตั้งค่า 3 slider พร้อมกันตามประเภทไฟล์</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>🎙️ Podcast / Voice</h4>
+          <p>ตัดเฉพาะช่วงหยุดหายใจ/เงียบจริงๆ — เก็บเสียงพูดไว้ครบทุกคำ</p>
+          <p style="margin-top:8px;font-size:11px;color:var(--text-3)">
+            <code>threshold = -45 dB</code><br>
+            <code>minDur = 200 ms</code><br>
+            <code>pad = 50 ms</code>
+          </p>
+        </div>
+        <div class="card">
+          <h4>🎬 Video / YouTube</h4>
+          <p>ตัด pause/ช่วงเปลี่ยนฉากยาว — ไม่ตัดหายใจระหว่างพูด</p>
+          <p style="margin-top:8px;font-size:11px;color:var(--text-3)">
+            <code>threshold = -35 dB</code><br>
+            <code>minDur = 500 ms</code><br>
+            <code>pad = 100 ms</code>
+          </p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <h4>🎤 Interview</h4>
+        <p>เก็บทุกคำพูด — ตัดเฉพาะช่วงเงียบยาวระหว่าง Q&amp;A</p>
+        <p style="margin-top:8px;font-size:11px;color:var(--text-3)">
+          <code>threshold = -50 dB</code> (เข้มงวดมาก)<br>
+          <code>minDur = 100 ms</code><br>
+          <code>pad = 30 ms</code>
+        </p>
+      </div>
+
+      <h3>ตัวอย่าง — ใช้ Podcast preset</h3>
+      <div class="shot">
+        <img src="images/05_preset_podcast.png" alt="Podcast preset applied" />
+        <div class="shot-cap"><b>ภาพที่ 5</b><span>F7: กด Podcast → threshold = -45 dB, minDur = 200 ms, pad = 50 ms</span></div>
+      </div>
+
+      <div class="shot">
+        <img src="images/06_preset_video.png" alt="Video preset applied" />
+        <div class="shot-cap"><b>ภาพที่ 6</b><span>F7: กด Video → threshold = -35 dB, minDur = 500 ms, pad = 100 ms</span></div>
+      </div>
+
+      <div class="shot">
+        <img src="images/07_preset_interview.png" alt="Interview preset applied" />
+        <div class="shot-cap"><b>ภาพที่ 7</b><span>F7: กด Interview → threshold = -50 dB, minDur = 100 ms, pad = 30 ms</span></div>
+      </div>
+    </section>
+
+    <!-- ============== Feature 8 ============== -->
+    <section id="f8">
+      <div class="sec-num">8</div>
+      <div class="sec-label">F8 · Adaptive threshold</div>
+      <h2>Adaptive threshold — แอปคำนวณ noise floor อัตโนมัติ</h2>
+      <p class="lead">แทนที่จะเดา threshold เอง → แอปจะสแกน <b>30th percentile</b> ของ dB ทั้งไฟล์ แล้วตั้ง threshold = noiseFloor + 5dB</p>
+
+      <h3>อัลกอริทึม</h3>
+      <ol class="steps">
+        <li>สแกน RMS amplitude ทุก 10ms</li>
+        <li>คำนวณ dB ของแต่ละ window</li>
+        <li>เรียง dB แล้วหา 30th percentile (≈ noise floor)</li>
+        <li>ตั้ง threshold = noiseFloor + 5dB (เก็บเฉพาะเสียงที่ดังกว่า noise ชัดเจน)</li>
+        <li>วิเคราะห์ใหม่ทันที</li>
+      </ol>
+
+      <div class="shot">
+        <img src="images/08_adaptive.png" alt="Adaptive threshold calculated" />
+        <div class="shot-cap"><b>ภาพที่ 8</b><span>F8: กด Adaptive → แอปคำนวณ noise floor + 5dB อัตโนมัติ</span></div>
+      </div>
+
+      <div class="box tip">
+        <strong>เหมาะกับ:</strong> ไฟล์ outdoor, ไฟล์มี background noise, ไฟล์ที่ไม่รู้ noise level — แอปจะปรับให้อัตโนมัติ
+      </div>
+    </section>
+
+    <!-- ============== Feature 9 ============== -->
+    <section id="f9">
+      <div class="sec-num">9</div>
+      <div class="sec-label">F9 · Batch processing</div>
+      <h2>Batch processing — ตัดทีละ 20 ไฟล์</h2>
+      <p class="lead">ลากหลายไฟล์พร้อมกัน → แอปเพิ่มเข้า queue → กด Process all → แอปดาวน์โหลดไฟล์ที่ตัดเสร็จทีละไฟล์</p>
+
+      <h3>วิธีใช้</h3>
+      <ol class="steps">
+        <li>ลากหลายไฟล์ (Ctrl+Click) มาที่ drop zone</li>
+        <li>แอปเพิ่มเข้า Batch Queue (แสดงทันที)</li>
+        <li>เลือก preset ที่ต้องการ (Podcast/Video/Interview)</li>
+        <li>กด ▶ Process all &amp; download</li>
+        <li>แอปจะ process ทีละไฟล์ → download แต่ละไฟล์เข้า Downloads folder</li>
+        <li>เมื่อเสร็จจะแสดง "Batch: X/Y สำเร็จ"</li>
+      </ol>
+
+      <div class="shot">
+        <img src="images/13_batch_queue.png" alt="Batch queue panel" />
+        <div class="shot-cap"><b>ภาพที่ 13</b><span>F9: Batch Queue แสดง 4 ไฟล์ พร้อม status (✓ done, ⚙ processing, ⏳ pending, ✗ error)</span></div>
+      </div>
+
+      <div class="box warn">
+        <strong>⚠️ ข้อจำกัด:</strong> ไฟล์ใหญ่ 50+ MB อาจใช้เวลานาน — แนะนำประมวลผล 5-10 ไฟล์ต่อครั้ง
+      </div>
+    </section>
+
+    <!-- ============== Feature 10 ============== -->
+    <section id="f10">
+      <div class="sec-num">10</div>
+      <div class="sec-label">F10 · Save preset</div>
+      <h2>Save preset — เก็บใน localStorage ไม่หาย</h2>
+      <p class="lead">ผู้ใช้ที่ตัด podcast เป็นประจำไม่ต้องปรับ slider ทุกครั้ง — บันทึก preset ไว้ใน browser ได้ไม่จำกัด</p>
+
+      <h3>วิธีใช้</h3>
+      <ol class="steps">
+        <li>ปรับ slider 3 ตัวให้ได้ค่าที่ต้องการ</li>
+        <li>กด 💾 Save</li>
+        <li>พิมพ์ชื่อ preset (เช่น "MyPodcastDefault")</li>
+        <li>กด บันทึก</li>
+        <li>Preset แสดงใน dropdown "เลือก preset" — เลือกเพื่อโหลดค่ากลับมา</li>
+      </ol>
+
+      <div class="shot">
+        <img src="images/10_save_preset.png" alt="Save preset dialog" />
+        <div class="shot-cap"><b>ภาพที่ 10</b><span>F10: กด Save → พิมพ์ชื่อ → กดบันทึก → preset เก็บใน localStorage</span></div>
+      </div>
+
+      <div class="box info">
+        <strong>Storage:</strong> Preset เก็บใน <code>localStorage.dar_presets_v1</code> ของ browser นั้น — ไม่ sync ข้ามเครื่อง ถ้าต้องการ backup → Export ผ่าน DevTools (Application tab)
+      </div>
+    </section>
+
+    <!-- ============== Feature 11 (v1.2): Settings panel ============== -->
+    <section id="f11">
+      <div class="sec-num">11</div>
+      <div class="sec-label">F11 · Settings (v1.2)</div>
+      <h2>Settings panel — persistent language + fade</h2>
+      <p class="lead">กดไอคอน ⚙️ มุมขวาบน → เปิด modal ตั้งค่า — ทุกอย่าง persist ใน localStorage ข้าม session</p>
+
+      <div class="grid-2">
+        <div>
+          <h3>ตั้งค่าที่ปรับได้</h3>
+          <ul>
+            <li><b>Language</b> — TH / EN (sync กับ lang switch มุมขวาบน)</li>
+            <li><b>Crossfade</b> — เปิด/ปิด fade ตรงรอยต่อ (sync กับ checkbox หลัก)</li>
+            <li><b>Crossfade duration</b> — 0–100ms (default 10ms)</li>
+            <li><b>Auto-adapt on load</b> — ปรับ threshold อัตโนมัติทุกครั้งที่โหลดไฟล์ (off by default)</li>
+            <li><b>Clear all data</b> — ลบ presets + settings ทั้งหมด (มี confirm)</li>
+          </ul>
+        </div>
+        <div class="shot-frame">
+          <img src="images/02_settings_open.png" alt="Settings modal" />
+          <div class="shot-cap"><b>ภาพที่ 11</b><span>Settings modal แสดงข้อมูล storage ที่ใช้</span></div>
+        </div>
+      </div>
+
+      <div class="box info">
+        <strong>Storage keys:</strong> <code>dar_settings_v1</code> + <code>dar_presets_v1</code> แสดงใน modal (มี key + ขนาด KB ที่ใช้)
+      </div>
+    </section>
+
+    <!-- ============== Feature 12 (v1.2): Delete preset ============== -->
+    <section id="f12">
+      <div class="sec-num">12</div>
+      <div class="sec-label">F12 · Delete preset (v1.2)</div>
+      <h2>ลบ preset ที่ไม่ใช้แล้ว</h2>
+      <p class="lead">เลือก preset ใน dropdown → ปุ่ม <b>×</b> ข้างๆ เปิดใช้งาน → กด × → confirm → ลบ</p>
+
+      <h3>การใช้งาน</h3>
+      <ol class="steps">
+        <li>เปิด dropdown "เลือก preset" (จะโชว์เมื่อมี saved preset ≥1)</li>
+        <li>เลือกชื่อ preset ที่จะลบ → ปุ่ม × ข้าง dropdown เปลี่ยนเป็นสีแดง</li>
+        <li>กด × → confirm dialog → preset หายจาก list + localStorage</li>
+      </ol>
+
+      <div class="shot-frame">
+        <img src="images/08_preset_selected_delete_enabled.png" alt="Delete preset" />
+        <div class="shot-cap"><b>ภาพที่ 12</b><span>เลือก preset → ปุ่ม × แดง → กดเพื่อลบ</span></div>
+      </div>
+
+      <div class="box tip">
+        <strong>Load preset:</strong> double-click preset ใน list (หรือกด Enter ตอน focus) — เปลี่ยนจาก v1.1 ที่ load ทันทีที่ select เพราะกัน accidental load
+      </div>
+    </section>
+
+    <!-- ============== Feature 13 (v1.2): Real progress ============== -->
+    <section id="f13">
+      <div class="sec-num">13</div>
+      <div class="sec-label">F13 · Real export progress (v1.2)</div>
+      <h2>Progress bar ที่ตามไบต์จริง</h2>
+      <p class="lead">v1.1 progress เป็น time-estimate (คาดเดา) v1.2 progress = <b>bytesWritten / expectedBytes</b> — แม่นยำ 100%</p>
+
+      <h3>อัลกอริทึม</h3>
+      <ul>
+        <li><b>Audio (WAV):</b> encodeWAV() วัดเวลาจริง → 50% เมื่อ encode เสร็จ → 100% หลัง trigger download → toast แสดง <code>sizeKB + ms</code></li>
+        <li><b>Video (WebM):</b> MediaRecorder <code>ondataavailable</code> นับ bytes สะสม → tickExportProgress() ทุก chunk → เป้า = totalKeepDuration × 5.125 Mbps</li>
+        <li><b>Success toast:</b> <code>ดาวน์โหลด 5.6MB · ลด 92% จาก 70MB</code></li>
+      </ul>
+
+      <div class="box info">
+        <strong>ขนาดไฟล์ที่ export ได้:</strong> ขึ้นกับ codec (VP9 + Opus ใน WebM) + content (ยิ่งมี dead air มากยิ่งเล็ก) — ตัวอย่าง TikTok 70MB → WebM 5.6MB = ลด 92%
+      </div>
+    </section>
+
+    <!-- ============== Workflows ============== -->
+    <section id="workflows">
+      <div class="sec-num">⚙</div>
+      <div class="sec-label">Workflows</div>
+      <h2>Workflow สำหรับผู้ใช้ทั่วไป</h2>
+
+      <h3>🎬 Workflow A: ตัด video YouTube ที่อัดมา</h3>
+      <ol class="steps">
+        <li>อัปโหลด MP4 → รอวิเคราะห์</li>
+        <li>กด 🎬 Video preset (threshold = -35 dB)</li>
+        <li>ดู waveform — ตรวจช่วง silence overlay</li>
+        <li>เปิด 🔄 A/B เพื่อฟังเทียบ</li>
+        <li>คลิก waveform ถ้ามี false positive (เช่น ช่วงเสียงเบาๆ ที่ไม่อยากตัด)</li>
+        <li>กด Export WebM → ดาวน์โหลด</li>
+      </ol>
+
+      <h3>🎙️ Workflow B: ตัด podcast 30 นาที</h3>
+      <ol class="steps">
+        <li>อัปโหลด MP3 → รอวิเคราะห์</li>
+        <li>กด 🎙️ Podcast preset (-45 dB, 200 ms, 50 ms)</li>
+        <li>ดู Segments list — ตรวจ false positive (เช่น หายใจยาว)</li>
+        <li>คลิก waveform เพื่อ override</li>
+        <li>กด Export WAV → ดาวน์โหลด</li>
+      </ol>
+
+      <h3>📦 Workflow C: ตัด 20 ไฟล์พร้อมกัน</h3>
+      <ol class="steps">
+        <li>เลือก preset ที่ต้องการ (เช่น 🎬 Video)</li>
+        <li>ลาก 20 ไฟล์มาที่ drop zone พร้อมกัน</li>
+        <li>แอปเพิ่มเข้า Batch Queue</li>
+        <li>กด ▶ Process all</li>
+        <li>แอปดาวน์โหลด 20 ไฟล์เข้า Downloads folder</li>
+      </ol>
+    </section>
+
+    <!-- ============== FAQ ============== -->
+    <section id="multi-file">
+      <h2>F11: Multi-File Tabs + Apply to All + Export All (v1.3)</h2>
+      <p><strong>เพิ่มใน v1.3:</strong> ทำงานหลายไฟล์พร้อมกันในหน้าเดียว ไม่ต้องรอ export ไฟล์นึงเสร็จแล้วค่อยโหลดอีกไฟล์</p>
+
+      <h3>🎯 3 ของใหม่หลัก</h3>
+      <ul>
+        <li><strong>Tab per file</strong> — คลิกสลับไปมาระหว่างไฟล์โดยไม่สูญเสีย state (segments, threshold, processed buffer)</li>
+        <li><strong>Apply to All</strong> — เปลี่ยน threshold/min-silence/padding แล้วกดปุ่มเดียวให้ apply กับทุกไฟล์ที่ decode แล้ว</li>
+        <li><strong>Export All</strong> — dropdown เมนู: เลือก export เฉพาะไฟล์นี้ หรือ export ทั้งหมดทีละไฟล์ (80ms delay ป้องกัน popup blocker)</li>
+      </ul>
+
+      <h3>📸 3 ไฟล์ loaded พร้อมกัน</h3>
+      <p>ลากไฟล์ 3 ไฟล์ลง drop zone → 3 tabs ปรากฏด้านบน waveform → ไฟล์แรก auto-decode + analyze</p>
+      <img class="shot" src="images/01_three_files.png" alt="3 files loaded" data-shot="01_three_files" />
+
+      <h3>⚙️ Apply to All</h3>
+      <p>เปลี่ยน threshold จาก -40 dB → -55 dB → กด <em>📋 ใช้ค่านี้กับทั้งหมด</em> → ไฟล์ทั้ง 3 ถูก re-analyze ด้วย threshold ใหม่ทันที (segments เปลี่ยน)</p>
+      <img class="shot" src="images/02_apply_to_all.png" alt="Apply to all" data-shot="02_apply_to_all" />
+
+      <h3>📦 Export All</h3>
+      <p>กดปุ่ม <em>⬇ Export</em> → dropdown เปิด → เลือก <em>📦 ทั้งหมด (3)</em> → ดาวน์โหลด WAV ทั้ง 3 ไฟล์ตามลำดับ</p>
+      <img class="shot" src="images/03_export_all.png" alt="Export all" data-shot="03_export_all" />
+
+      <h3>🔄 สลับไฟล์ + ปิดไฟล์</h3>
+      <p>คลิก tab → waveform + segments ของไฟล์นั้นแสดงทันที (ไม่ต้อง decode ใหม่ — cache ไว้ใน state.files[])</p>
+      <img class="shot" src="images/04_switched_to_2nd.png" alt="Switched" data-shot="04_switched_to_2nd" />
+      <p>คลิก × บน active tab → ลบไฟล์ออกจาก queue → auto-switch ไป tab ข้างเคียง หรือ reset กลับ drop zone ถ้าเหลือไฟล์เดียว</p>
+      <img class="shot" src="images/05_after_close.png" alt="After close" data-shot="05_after_close" />
+
+      <h3>🧠 State Architecture</h3>
+      <pre><code>state.files[] = [
+  { id, file, name, kind, size,
+    audioBuffer, segments, processedBuffer,
+    duration, sampleRate, numChannels,
+    status: 'pending' | 'decoded' | 'error',
+    error: null | string },
+  ...
+]
+state.activeFileIndex = -1 | 0..N-1</code></pre>
+      <p>ทุกไฟล์เก็บ buffer/segments แยก → สลับไฟล์ได้ทันทีโดยไม่ต้อง decode ซ้ำ</p>
+    </section>
+
+    <section id="faq">
+      <div class="sec-num">?</div>
+      <div class="sec-label">FAQ</div>
+      <h2>คำถามที่พบบ่อย</h2>
+
+      <h3>❓ ไฟล์ถูกส่งไปเซิร์ฟเวอร์ไหม?</h3>
+      <p>ไม่ — ทุกอย่างทำในเบราว์เซอร์ ดู <code>Network tab</code> ใน DevTools ขณะอัปโหลดจะเห็นว่าไม่มี request ออกนอกเครื่อง</p>
+
+      <h3>❓ ทำไมบางไฟล์ Export แล้วเป็น WebM ไม่ใช่ MP4?</h3>
+      <p>WebM รองรับใน Chrome/Edge/Firefox แต่ Safari/iPhone ไม่รองรับ — ใช้ MP4 export (F3) ถ้าต้องเปิดบน iPhone</p>
+
+      <h3>❓ threshold ค่าไหนเหมาะกับ podcast?</h3>
+      <p>ใช้ Preset Podcast (-45 dB) เป็นค่า default — ถ้ายังตัดมากไป ลด threshold ลง (-50 dB) / ถ้าตัดน้อยไป เพิ่ม (-40 dB)</p>
+
+      <h3>❓ ทำไม podcast ของผมไม่ถูกตัดเลย?</h3>
+      <p>ลอง Adaptive (F8) — แอปจะคำนวณ noise floor ให้อัตโนมัติ หรือลด threshold ลงถ้าเสียงพูดเบา</p>
+
+      <h3>❓ Batch ใหญ่ๆ จะใช้เวลาเท่าไหร่?</h3>
+      <p>~1-2 วินาที ต่อ 1 นาที ของ audio — ไฟล์ 30 นาที ใช้ ~30-60 วินาที</p>
+
+      <h3>❓ ลบ preset ที่บันทึกไว้ได้ไหม?</h3>
+      <p>ใน v1.1 ยังไม่มี UI — ใช้ DevTools Console: <code>localStorage.removeItem('dar_presets_v1')</code></p>
+    </section>
+
+    <p class="foot">
+      Built with Web Audio API + Canvas 2D · <a href="https://codehub.sj88ai.com/skill/" target="_blank" rel="noopener">CodeHub Skills v3.7</a> · v1.3 · 2026-07-13
+    </p>
+  </main>
+</div>
+
+<script>
+// Smooth scroll + active TOC
+const tocLinks = document.querySelectorAll('.toc a');
+const sections = document.querySelectorAll('main section[id]');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      tocLinks.forEach(l => l.classList.remove('active'));
+      const id = entry.target.id;
+      const link = document.querySelector('.toc a[href="#' + id + '"]');
+      if (link) link.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
