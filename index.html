@@ -1708,7 +1708,6 @@ async function exportAll() {
   if (videoCount) msg += '\n' + (lang === 'th' ? `🎬 ${videoCount} ไฟล์ video → audio-only (ใช้ ffmpeg mux กับ video เดิมถ้าต้องการ video เต็ม)` : `🎬 ${videoCount} video file(s) → audio-only (use ffmpeg to mux with original video for full video)`);
   toast(msg, err ? 'amber' : 'green', 6000);
 }
-}
 
 /* ==================== Editor ==================== */
 function renderEditor() {
