@@ -393,6 +393,27 @@ input,select{font:inherit;color:inherit}
 }
 @keyframes badgeIn{from{transform:scale(0)}to{transform:scale(1)}}
 
+/* v1.3.3: Per-file segment count badge on tab */
+.file-tab .ftab-seg{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;padding:0 5px;
+  background:rgba(120,180,120,.2);color:#7dca7d;
+  border:1px solid rgba(120,180,120,.4);
+  border-radius:9px;font-size:10px;font-weight:600;
+  margin-left:4px;line-height:1;
+  flex-shrink:0;
+}
+.file-tab .ftab-seg.loading{
+  background:rgba(255,180,80,.2);color:#ffc060;
+  border-color:rgba(255,180,80,.4);
+  animation:pulse 1.2s ease-in-out infinite;
+}
+.file-tab .ftab-seg.error{
+  background:rgba(220,80,80,.2);color:#e87070;
+  border-color:rgba(220,80,80,.4);
+}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
 /* ============== v1.3: Export dropdown menu ============== */
 .export-menu{
   position:absolute;top:calc(100% + 6px);right:0;z-index:200;
@@ -1411,7 +1432,20 @@ function renderFileTabs() {
     const kindIco = f.kind === 'video' ? '🎬' : '🎵';
     const trunc = f.name.length > 18 ? f.name.slice(0, 16) + '…' : f.name;
     const closeHtml = i === state.activeFileIndex ? '<span class="ftab-close" data-close="' + i + '">×</span>' : '';
-    tab.innerHTML = '<span>' + kindIco + '</span><span class="ftab-name" title="' + escapeHtml(f.name) + '">' + escapeHtml(trunc) + '</span>' + closeHtml;
+    // v1.3.3: Per-file segment count badge (with status color)
+    const segs = f.segments?.length || 0;
+    const status = f.status || 'pending';
+    const isDecoded = status === 'decoded';
+    const isError = status === 'error';
+    let segBadge = '';
+    if (isDecoded && segs > 0) {
+      segBadge = '<span class="ftab-seg" title="' + segs + ' segments detected">' + segs + '</span>';
+    } else if (status === 'pending' || status === 'decoding') {
+      segBadge = '<span class="ftab-seg loading" title="' + (lang === 'th' ? 'กำลัง decode' : 'decoding') + '">⏳</span>';
+    } else if (isError) {
+      segBadge = '<span class="ftab-seg error" title="' + (lang === 'th' ? 'ผิดพลาด' : 'error') + '">✕</span>';
+    }
+    tab.innerHTML = '<span>' + kindIco + '</span><span class="ftab-name" title="' + escapeHtml(f.name) + '">' + escapeHtml(trunc) + '</span>' + segBadge + closeHtml;
     tab.addEventListener('click', (e) => {
       if (e.target.dataset.close) {
         closeFile(parseInt(e.target.dataset.close));
