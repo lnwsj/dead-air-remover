@@ -1673,7 +1673,7 @@ async function exportAll() {
   saveCurrentToFile();
   loading(true, I18N[lang].loadText, lang === 'th' ? 'Export ทั้งหมด...' : 'Exporting all...');
   setExporting(true, 0);
-  let ok = 0, err = 0;
+  let ok = 0, err = 0, videoCount = 0;
   const total = state.files.length;
   for (let i = 0; i < total; i++) {
     const f = state.files[i];
@@ -1685,11 +1685,13 @@ async function exportAll() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = base + '_no-dead-air.wav';
+      // v1.4.3: tag video exports with "_audio" suffix
+      a.download = base + (f.kind === 'video' ? '_no-dead-air_audio.wav' : '_no-dead-air.wav');
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1500);
+      if (f.kind === 'video') videoCount++;
       ok++;
       $('exportPctVal').textContent = (lang === 'th' ? `ส่งออก ${i+1}/${total} · ${sizeKB}KB` : `Exported ${i+1}/${total} · ${sizeKB}KB`);
     } catch (e) {
@@ -1701,7 +1703,11 @@ async function exportAll() {
   }
   setExporting(false, 0);
   loading(false);
-  toast('✅ ' + (lang === 'th' ? 'Export' : 'Exported') + ' ' + ok + '/' + total + (err ? ` (${err} error)` : ''), err ? 'amber' : 'green');
+  let msg = '✅ ' + (lang === 'th' ? 'Export' : 'Exported') + ' ' + ok + '/' + total;
+  if (err) msg += ` (${err} error)`;
+  if (videoCount) msg += '\n' + (lang === 'th' ? `🎬 ${videoCount} ไฟล์ video → audio-only (ใช้ ffmpeg mux กับ video เดิมถ้าต้องการ video เต็ม)` : `🎬 ${videoCount} video file(s) → audio-only (use ffmpeg to mux with original video for full video)`);
+  toast(msg, err ? 'amber' : 'green', 6000);
+}
 }
 
 /* ==================== Editor ==================== */
