@@ -380,6 +380,19 @@ input,select{font:inherit;color:inherit}
 .file-tab .ftab-close:hover{background:#c93820}
 .file-tabs-actions{display:flex;gap:6px;flex-shrink:0}
 
+/* v1.3.1: File count badge on resetBtn */
+#resetBtn{position:relative}
+.reset-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:20px;height:20px;padding:0 6px;
+  background:var(--accent,#ff7849);color:#fff;
+  border-radius:10px;font-size:11px;font-weight:700;
+  margin-left:6px;line-height:1;
+  box-shadow:0 2px 6px rgba(255,120,73,.4);
+  animation:badgeIn .25s ease-out;
+}
+@keyframes badgeIn{from{transform:scale(0)}to{transform:scale(1)}}
+
 /* ============== v1.3: Export dropdown menu ============== */
 .export-menu{
   position:absolute;top:calc(100% + 6px);right:0;z-index:200;
@@ -1387,6 +1400,7 @@ function renderFileTabs() {
   const list = $('fileTabsList');
   if (!state.files.length) {
     wrap.style.display = 'none';
+    updateResetBtnBadge();
     return;
   }
   wrap.style.display = 'flex';
@@ -1408,6 +1422,25 @@ function renderFileTabs() {
     list.appendChild(tab);
   });
   $('exportAllCount').textContent = state.files.length;
+  updateResetBtnBadge();
+}
+
+function updateResetBtnBadge() {
+  const btn = $('resetBtn');
+  if (!btn) return;
+  const n = state.files.length;
+  // Remove old badge if any
+  const oldBadge = btn.querySelector('.reset-badge');
+  if (oldBadge) oldBadge.remove();
+  if (n > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'reset-badge';
+    badge.textContent = n;
+    btn.appendChild(badge);
+    btn.title = (lang === 'th' ? 'เปลี่ยนไฟล์ทั้งหมด · ' : 'Replace all files · ') + n + (lang === 'th' ? ' ไฟล์' : ' file(s)');
+  } else {
+    btn.removeAttribute('title');
+  }
 }
 
 function switchToFile(idx) {
