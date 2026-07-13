@@ -1589,19 +1589,29 @@ function applyToAll() {
   // Save current to active file first
   saveCurrentToFile();
   loading(true, I18N[lang].loadText, lang === 'th' ? 'ใช้ค่ากับทุกไฟล์...' : 'Applying to all...');
+  // v1.4.2: Show progress bar
+  setExporting(true, 0);
+  $('exportProgressLabel').textContent = lang === 'th' ? 'ใช้ค่ากับทุกไฟล์…' : 'Applying to all…';
+  $('exportPctVal').textContent = `0 / ${state.files.length}`;
   setTimeout(async () => {
     // First decode any pending files (v1.3: parallel decode)
     const pending = state.files.filter(f => f.status === 'pending' || (f.status === 'decoded' && !f.audioBuffer));
-    for (const f of pending) {
+    for (let pi = 0; pi < pending.length; pi++) {
+      const f = pending[pi];
       const idx = state.files.indexOf(f);
-      if (idx >= 0) await decodeFileInBackground(idx);
+      if (idx >= 0) {
+        $('exportPctVal').textContent = `${lang === 'th' ? 'Decoding' : 'Decoding'} ${pi+1}/${pending.length}…`;
+        await decodeFileInBackground(idx);
+      }
     }
     let ok = 0, err = 0;
     // Use current settings (from sliders)
     const settings = { ...state.proc };
-    state.files.forEach((f, i) => {
+    const total = state.files.length;
+    for (let i = 0; i < state.files.length; i++) {
+      const f = state.files[i];
       try {
-        if (!f.audioBuffer) { err++; return; }
+        if (!f.audioBuffer) { err++; continue; }
         // Swap in temporarily to use analyzeSilence / buildProcessedBuffer
         const savedAB = state.audioBuffer;
         const savedSegs = state.segments;
@@ -1640,13 +1650,18 @@ function applyToAll() {
         state.duration = savedDur;
         state.sampleRate = savedSR;
         state.numChannels = savedNC;
+        // v1.4.2: Update progress
+        $('exportPctVal').textContent = `${lang === 'th' ? 'วิเคราะห์' : 'Analyzing'} ${i+1}/${total} · ${f.name}`;
+        setExporting(true, Math.round(((i + 1) / total) * 100));
+        await new Promise(r => setTimeout(r, 10));  // Yield to UI
       } catch (e) {
         console.error('applyToAll error on', f.name, e);
         err++;
       }
-    });
+    }
     renderFileTabs();
     renderEditor();
+    setExporting(false, 0);
     loading(false);
     toast('✅ ' + (lang === 'th' ? 'ใช้ค่ากับ' : 'Applied to') + ' ' + ok + '/' + state.files.length + ' ' + (lang === 'th' ? 'ไฟล์' : 'files') + (err ? ` (${err} error)` : ''), err ? 'amber' : 'green');
   }, 30);
