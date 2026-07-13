@@ -414,6 +414,14 @@ input,select{font:inherit;color:inherit}
 }
 @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
 
+/* v1.4: Drag-over highlight on file tabs */
+.file-tabs.drag-files{
+  background:rgba(255,120,73,.12);
+  border:2px dashed var(--accent,#ff7849);
+  box-shadow:0 0 0 4px rgba(255,120,73,.15);
+  transition:all .15s ease-out;
+}
+
 /* ============== v1.3: Export dropdown menu ============== */
 .export-menu{
   position:absolute;top:calc(100% + 6px);right:0;z-index:200;
@@ -1882,6 +1890,30 @@ function wireEvents() {
   ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('drag'); }));
   ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('drag'); }));
   dz.addEventListener('drop', e => { e.preventDefault(); handleFile(e.dataTransfer.files); });  // v1.3: pass full FileList
+
+  // v1.4: Drag-drop on file tabs to add more files to existing queue
+  const tabs = $('fileTabs');
+  ['dragenter','dragover'].forEach(ev => tabs.addEventListener(ev, e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (state.files.length) tabs.classList.add('drag-files');
+  }));
+  ['dragleave','drop'].forEach(ev => tabs.addEventListener(ev, e => {
+    e.preventDefault();
+    e.stopPropagation();
+    tabs.classList.remove('drag-files');
+  }));
+  tabs.addEventListener('drop', e => {
+    if (e.dataTransfer.files?.length) {
+      handleFile(e.dataTransfer.files);
+    }
+  });
+
+  // v1.4: Prevent browser default (file navigate) on stray drops outside both drop zones
+  ['dragover','drop'].forEach(ev => document.addEventListener(ev, e => {
+    if (e.target === dz || e.target === tabs || e.target.closest('#fileTabs') || e.target.closest('#drop')) return;
+    e.preventDefault();
+  }));
 
   // Reset
   $('resetBtn').addEventListener('click', () => {
