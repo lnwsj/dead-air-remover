@@ -737,10 +737,15 @@ input,select{font:inherit;color:inherit}
           <div class="preset-row" style="margin-top:6px">
             <button class="btn" id="presetAdaptive" title="คำนวณ noise floor อัตโนมัติ">🧠 Adaptive</button>
             <button class="btn" id="presetSave" title="บันทึก preset ปัจจุบัน">💾 Save</button>
+            <button class="btn" id="projectSave" title="บันทึก project (settings + รายชื่อไฟล์)">📁 Project</button>
           </div>
           <div class="preset-saved-row" id="presetSavedRow" style="display:none">
             <input type="text" id="presetName" placeholder="ชื่อ preset..." />
             <button class="btn primary" id="presetSaveConfirm">บันทึก</button>
+          </div>
+          <div class="preset-saved-row" id="projectSavedRow" style="display:none">
+            <input type="text" id="projectName" placeholder="ชื่อโปรเจค..." />
+            <button class="btn primary" id="projectSaveConfirm">บันทึก</button>
           </div>
           <div class="preset-row-with-delete">
             <select id="presetList" style="display:none;background:var(--bg-3);color:var(--text);border:1px solid var(--line);padding:6px;border-radius:6px;font-size:11.5px">
@@ -2549,7 +2554,14 @@ function renderPresetList() {
   }
   sel.style.display = 'block';
   sel.innerHTML = '<option value="">-- เลือก preset (' + presets.length + ') --</option>' +
-    presets.map(p => '<option value="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + ' (' + p.threshold + 'dB/' + p.minDur + 'ms)</option>').join('');
+    presets.map(p => {
+      const isProj = p.type === 'project';
+      const ico = isProj ? '📁 ' : '⚡ ';
+      const detail = isProj
+        ? ' (📁 ' + (p.files?.length || 0) + ' ไฟล์)'
+        : ' (' + p.threshold + 'dB/' + p.minDur + 'ms)';
+      return '<option value="' + escapeHtml(p.name) + '">' + ico + escapeHtml(p.name) + detail + '</option>';
+    }).join('');
   $('presetInfo').textContent = '3 + ' + presets.length + ' saved';
   if (delBtn) delBtn.disabled = !sel.value;
 }
@@ -2562,6 +2574,39 @@ $('presetSave').addEventListener('click', () => {
     $('presetName').value = '';
     $('presetName').focus();
   }
+});
+
+// v1.4: Project Save — save settings + file list (names + sizes) for batch reuse
+$('projectSave').addEventListener('click', () => {
+  $('projectSavedRow').style.display = $('projectSavedRow').style.display === 'none' ? 'flex' : 'none';
+  if ($('projectSavedRow').style.display === 'flex') {
+    $('projectName').value = '';
+    $('projectName').focus();
+  }
+});
+$('projectSaveConfirm').addEventListener('click', () => {
+  const name = $('projectName').value.trim();
+  if (!name) { toast('⚠️ ใส่ชื่อโปรเจค', 'amber'); return; }
+  const presets = loadSavedPresets();
+  const idx = presets.findIndex(p => p.name === name);
+  // Save settings + file metadata (not actual file data)
+  const fileList = state.files.map(f => ({ name: f.name, size: f.size, kind: f.kind }));
+  const entry = {
+    name,
+    type: 'project',
+    threshold: state.proc.threshold,
+    minDur: state.proc.minDur,
+    pad: state.proc.pad,
+    fade: state.proc.fade,
+    files: fileList,
+    ts: Date.now()
+  };
+  if (idx >= 0) presets[idx] = entry;
+  else presets.push(entry);
+  saveSavedPresets(presets);
+  renderPresetList();
+  $('projectSavedRow').style.display = 'none';
+  toast('✅ โปรเจคบันทึกแล้ว · ' + fileList.length + ' ไฟล์ · ' + name, 'green');
 });
 $('presetSaveConfirm').addEventListener('click', () => {
   const name = $('presetName').value.trim();
@@ -2591,10 +2636,20 @@ function loadSelectedPreset() {
   const presets = loadSavedPresets();
   const p = presets.find(p => p.name === name);
   if (!p) return;
-  applyPreset({ threshold: p.threshold, minDur: p.minDur, pad: p.pad, label: '💾 ' + p.name });
-  $('fadeChk').checked = !!p.fade;
-  $('settingsFade').checked = !!p.fade;
-  state.proc.fade = !!p.fade;
+  // v1.4: Project type → apply settings + show file list hint
+  if (p.type === 'project') {
+    applyPreset({ threshold: p.threshold, minDur: p.minDur, pad: p.pad, label: '📁 ' + p.name });
+    $('fadeChk').checked = !!p.fade;
+    $('settingsFade').checked = !!p.fade;
+    state.proc.fade = !!p.fade;
+    const fileNames = (p.files || []).map(f => f.name).join(', ');
+    toast('📁 โปรเจค: ' + p.name + ' · ' + (p.files?.length || 0) + ' ไฟล์\n' + (fileNames || ''), 'green', 5000);
+  } else {
+    applyPreset({ threshold: p.threshold, minDur: p.minDur, pad: p.pad, label: '💾 ' + p.name });
+    $('fadeChk').checked = !!p.fade;
+    $('settingsFade').checked = !!p.fade;
+    state.proc.fade = !!p.fade;
+  }
   sel.value = '';
   const delBtn = $('presetDelete');
   if (delBtn) delBtn.disabled = true;
