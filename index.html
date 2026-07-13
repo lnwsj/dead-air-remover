@@ -28,20 +28,44 @@
   --r:14px;
   --r-sm:8px;
   --shadow:0 8px 32px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.04) inset;
+  --grad-1:rgba(255,90,60,.10);
+  --grad-2:rgba(38,208,124,.08);
+  color-scheme:dark;
+}
+/* v1.4.5: Light theme overrides */
+:root[data-theme="light"]{
+  --bg-0:#f5f7fa;
+  --bg-1:#ffffff;
+  --bg-2:#eef2f7;
+  --bg-3:#e2e8f0;
+  --bg-4:#d4dbe4;
+  --line:rgba(0,0,0,.10);
+  --line-2:rgba(0,0,0,.16);
+  --text:#0a0e14;
+  --text-2:#2a3340;
+  --text-3:#5a6675;
+  --keep-dim:rgba(38,160,100,.18);
+  --silence:rgba(220,60,40,.22);
+  --silence-2:rgba(220,60,40,.45);
+  --shadow:0 8px 32px rgba(0,0,0,.10),0 1px 0 rgba(255,255,255,.5) inset;
+  --grad-1:rgba(255,90,60,.18);
+  --grad-2:rgba(38,160,100,.12);
+  color-scheme:light;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter","SF Pro Text",system-ui,sans-serif;
   background:
-    radial-gradient(1200px 800px at 80% -10%,rgba(255,90,60,.10),transparent 60%),
-    radial-gradient(900px 700px at 0% 100%,rgba(38,208,124,.08),transparent 55%),
+    radial-gradient(1200px 800px at 80% -10%,var(--grad-1),transparent 60%),
+    radial-gradient(900px 700px at 0% 100%,var(--grad-2),transparent 55%),
     var(--bg-0);
   color:var(--text);
   font-size:14px;
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
   overflow-x:hidden;
+  transition:background .25s ease,color .25s ease;
 }
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
@@ -472,6 +496,7 @@ input,select{font:inherit;color:inherit}
     </div>
   </div>
   <div class="top-nav">
+    <button class="btn ghost" id="themeToggle" title="Theme · ธีม" style="padding:6px 10px;font-size:14px;line-height:1">🌙</button>
     <button class="btn ghost" id="settingsBtn" title="Settings · ตั้งค่า" style="padding:6px 10px;font-size:14px;line-height:1">⚙️</button>
     <div class="lang-switch" id="langSwitch">
       <button data-lang="th" class="active">TH</button>
@@ -1914,6 +1939,31 @@ function seekTo(mode, ratio) {
 
 /* ==================== Wire up events ==================== */
 function wireEvents() {
+  // v1.4.5: Theme toggle (dark ↔ light) + localStorage persistence
+  const THEME_KEY = 'dar_theme_v1';
+  const themeBtn = $('themeToggle');
+  function setTheme(t) {
+    if (t === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeBtn.textContent = '☀️';
+      themeBtn.title = 'Light mode · คลิกเพื่อ Dark';
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      themeBtn.textContent = '🌙';
+      themeBtn.title = 'Dark mode · คลิกเพื่อ Light';
+    }
+    try { localStorage.setItem(THEME_KEY, t); } catch {}
+  }
+  // Restore saved theme on load
+  let savedTheme = 'dark';
+  try { savedTheme = localStorage.getItem(THEME_KEY) || 'dark'; } catch {}
+  setTheme(savedTheme);
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    setTheme(cur === 'light' ? 'dark' : 'light');
+    toast(cur === 'light' ? '☀️ Light' : '🌙 Dark', '', 1200);
+  });
+
   // Lang switch
   $$('#langSwitch button').forEach(b => b.addEventListener('click', () => {
     lang = b.dataset.lang;
