@@ -1461,6 +1461,18 @@ function loadFileToEditor(f) {
 
 function closeFile(idx) {
   if (idx < 0 || idx >= state.files.length) return;
+  const fileEntry = state.files[idx];
+  const fileName = fileEntry?.name || ('#' + (idx + 1));
+  const hasResults = !!(fileEntry?.processedBuffer);
+  // Confirm ก่อนปิด — กันกดผิด
+  const msg = lang === 'th'
+    ? `ปิด "${fileName}"?\n\n` + (hasResults
+        ? '⚠️ ไฟล์นี้มี processed buffer แล้ว ปิดไปแล้วจะ decode ใหม่ต้องรอ'
+        : 'ปิดไฟล์นี้ออกจาก queue')
+    : `Close "${fileName}"?\n\n` + (hasResults
+        ? '⚠️ This file has a processed buffer. You will need to wait for re-decode after closing.'
+        : 'Remove this file from the queue');
+  if (!confirm(msg)) return;
   state.files.splice(idx, 1);
   if (!state.files.length) {
     // No files left — reset to drop zone
